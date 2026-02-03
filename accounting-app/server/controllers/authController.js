@@ -308,11 +308,72 @@ const updateProfile = async (req, res) => {
   }
 };
 
+// 设置分销商金额参数（仅首次或管理员）
+const updateDistributorSettings = async (req, res) => {
+  try {
+    const { commissionAmount, depositAmount, insuranceAmount } = req.body;
+    const userId = req.user.id;
+
+    // 检查用户
+    const user = await db.get('SELECT settings_locked, role FROM users WHERE id = ?', [userId]);
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: '用户不存在' });
+    }
+
+    // 如果已锁定且不是管理员，不允许修改
+    if (user.settings_locked === 1 && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: '设置已锁定，请联系管理员修改' });
+    }
+
+    await db.run(`
+      UPDATE users SET 
+        commission_amount = ?,
+        deposit_amount = ?,
+        insurance_amount = ?,
+        settings_locked = 1,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `, [commissionAmount, depositAmount, insuranceAmount, userId]);
+
+    res.json({
+      success: true,
+      message: '金额设置已保存'
+    });
+  } catch (error) {
+    console.error('设置金额错误:', error);
+    res.status(500).json({ success: false, message: '服务器错误' });
+  }
+};
+
+// 管理员解锁分销商设置
+const unlockDistributorSettings = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: '需要管理员权限' });
+    }
+
+    await db.run(
+      'UPDATE users SET settings_locked = 0 WHERE id = ?',
+      [userId]
+    );
+
+    res.json({ success: true, message: '已解锁该分销商的设置权限' });
+  } catch (error) {
+    console.error('解锁设置错误:', error);
+    res.status(500).json({ success: false, message: '服务器错误' });
+  }
+};
+
 module.exports = {
   login,
   register,
   generateInviteCode,
   getInviteCodes,
   getCurrentUser,
-  updateProfile
+  updateProfile,
+  updateDistributorSettings,
+  unlockDistributorSettings
 };

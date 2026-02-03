@@ -57,16 +57,16 @@ function AdminDashboard({ user, onLogout }) {
             👥 成员管理
           </Link>
           <Link 
-            to="/admin/accounting" 
-            className={location.pathname === '/admin/accounting' ? 'active' : ''}
+            to="/admin/contracts" 
+            className={location.pathname === '/admin/contracts' ? 'active' : ''}
           >
-            📖 账本管理
+            📋 合同管理
           </Link>
           <Link 
-            to="/admin/distributors" 
-            className={location.pathname === '/admin/distributors' ? 'active' : ''}
+            to="/admin/amounts" 
+            className={location.pathname === '/admin/amounts' ? 'active' : ''}
           >
-            🏢 分销管理
+            💵 金额管理
           </Link>
           <Link 
             to="/admin/billing" 
@@ -81,22 +81,22 @@ function AdminDashboard({ user, onLogout }) {
             💰 收租情况
           </Link>
           <Link 
+            to="/admin/accounting" 
+            className={location.pathname === '/admin/accounting' ? 'active' : ''}
+          >
+            📖 账本管理
+          </Link>
+          <Link 
+            to="/admin/distributors" 
+            className={location.pathname === '/admin/distributors' ? 'active' : ''}
+          >
+            🏢 分销管理
+          </Link>
+          <Link 
             to="/admin/invites" 
             className={location.pathname === '/admin/invites' ? 'active' : ''}
           >
             🎫 邀请码管理
-          </Link>
-          <Link 
-            to="/admin/contracts" 
-            className={location.pathname === '/admin/contracts' ? 'active' : ''}
-          >
-            📋 合同管理
-          </Link>
-          <Link 
-            to="/admin/amounts" 
-            className={location.pathname === '/admin/amounts' ? 'active' : ''}
-          >
-            💵 金额管理
           </Link>
           <Link 
             to="/admin/my-members" 

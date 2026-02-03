@@ -6,6 +6,8 @@ export const authAPI = {
   register: (userData) => apiClient.post('/auth/register', userData),
   getCurrentUser: () => apiClient.get('/auth/me'),
   updateProfile: (data) => apiClient.put('/auth/profile', data),
+  updateSettings: (data) => apiClient.put('/auth/settings', data),
+  unlockSettings: (userId) => apiClient.post('/auth/unlock-settings', { userId }),
   generateInviteCode: (data) => apiClient.post('/auth/invite-codes', data),
   getInviteCodes: () => apiClient.get('/auth/invite-codes')
 };
