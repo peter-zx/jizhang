@@ -79,6 +79,8 @@ class Database {
             id_card_2_expire_date DATE,
             city TEXT,
             distributor_id INTEGER NOT NULL,
+            documents TEXT, -- 存储证件图片路径的 JSON
+            additional_info TEXT, -- 存储未来新增词条的 JSON
             status TEXT DEFAULT 'active',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -117,6 +119,7 @@ class Database {
             contract_years INTEGER NOT NULL,
             contract_expire_date DATE NOT NULL,
             monthly_amount REAL NOT NULL,
+            contract_files TEXT, -- 存储合同图片路径的 JSON
             task_status TEXT DEFAULT 'active',
             exit_date DATE,
             exit_reason TEXT,

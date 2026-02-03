@@ -6,7 +6,7 @@ function InviteCodeManagement({ user }) {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
-    role: 'distributor_a',
+    role: user.role === 'admin' ? 'distributor_a' : 'distributor_b',
     count: 1
   });
 
@@ -161,8 +161,10 @@ function InviteCodeManagement({ user }) {
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                   required
                 >
-                  <option value="distributor_a">A层分销（佣金6%）</option>
-                  <option value="distributor_b">B层分销（佣金8%）</option>
+                  {user.role === 'admin' && (
+                    <option value="distributor_a">A层分销</option>
+                  )}
+                  <option value="distributor_b">B层分销</option>
                 </select>
               </div>
               <div className="form-group">

@@ -82,6 +82,7 @@ export const laborAPI = {
   addToPool: (data) => apiClient.post('/labor/pool', data),
   getLaborTasks: (params) => apiClient.get('/labor/tasks', { params }),
   createLaborTask: (data) => apiClient.post('/labor/tasks', data),
+  startTask: (data) => apiClient.post('/labor/tasks/start', data),
   exitLaborTask: (taskId, data) => apiClient.post(`/labor/tasks/${taskId}/exit`, data)
 };
 
@@ -90,6 +91,7 @@ export const billingAPI = {
   getMonthlyBills: (params) => apiClient.get('/billing/bills', { params }),
   confirmBill: (id, data) => apiClient.post(`/billing/bills/${id}/confirm`, data),
   getCurrentMonthStats: () => apiClient.get('/billing/stats/current'),
+  getAdminSummary: () => apiClient.get('/billing/stats/admin-summary'),
   getMonthlyRentCollection: (params) => apiClient.get('/billing/rent-collection', { params }),
   getReminders: () => apiClient.get('/billing/reminders'),
   markReminderRead: (id) => apiClient.post(`/billing/reminders/${id}/read`),

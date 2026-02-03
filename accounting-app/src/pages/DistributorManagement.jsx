@@ -6,10 +6,10 @@ function DistributorManagement({ user }) {
       id: 1,
       name: '李明',
       level: 'A',
-      commissionRate: 6,
+      commissionRate: 10,
       totalMembers: 45,
       totalRevenue: 450000,
-      totalCommission: 27000,
+      totalCommission: 45000,
       phone: '13800138001',
       email: 'liming@example.com',
       status: '正常'
@@ -18,10 +18,10 @@ function DistributorManagement({ user }) {
       id: 2,
       name: '王强',
       level: 'A',
-      commissionRate: 6,
+      commissionRate: 10,
       totalMembers: 38,
       totalRevenue: 380000,
-      totalCommission: 22800,
+      totalCommission: 38000,
       phone: '13800138002',
       email: 'wangqiang@example.com',
       status: '正常'
@@ -57,7 +57,7 @@ function DistributorManagement({ user }) {
   const [formData, setFormData] = useState({
     name: '',
     level: 'A',
-    commissionRate: 6,
+    commissionRate: 10,
     phone: '',
     email: '',
     status: '正常'
@@ -126,7 +126,7 @@ function DistributorManagement({ user }) {
       setFormData({
         ...formData,
         level: value,
-        commissionRate: value === 'A' ? 6 : 8
+        commissionRate: value === 'A' ? 10 : 8
       })
     } else {
       setFormData({
@@ -332,7 +332,7 @@ function DistributorManagement({ user }) {
                   <strong>说明：</strong>
                 </p>
                 <p style={{ fontSize: '13px', color: '#7f8c8d' }}>
-                  • A层分销默认佣金比例为6%<br/>
+                  • A层分销默认佣金比例为10%<br/>
                   • B层分销默认佣金比例为8%<br/>
                   • 可根据实际情况调整佣金比例
                 </p>

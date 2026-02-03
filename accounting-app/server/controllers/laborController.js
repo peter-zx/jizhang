@@ -211,10 +211,54 @@ const getLaborTasks = async (req, res) => {
   }
 };
 
+// 为现有成员启动劳动任务
+const startTaskForMember = async (req, res) => {
+  try {
+    const {
+      memberId,
+      contractSignDate,
+      contractYears,
+      monthlyAmount
+    } = req.body;
+
+    const member = await db.get('SELECT * FROM members WHERE id = ?', [memberId]);
+    if (!member) {
+      return res.status(404).json({ success: false, message: '成员不存在' });
+    }
+
+    // 计算合同到期日期
+    const signDate = new Date(contractSignDate);
+    const expireDate = new Date(signDate);
+    expireDate.setFullYear(expireDate.getFullYear() + parseInt(contractYears));
+
+    // 创建劳动任务
+    const taskResult = await db.run(`
+      INSERT INTO labor_tasks (
+        member_id, contract_sign_date, contract_years,
+        contract_expire_date, monthly_amount, task_status
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `, [memberId, contractSignDate, contractYears, expireDate.toISOString().split('T')[0], monthlyAmount, 'active']);
+
+    // 生成未来月份的账单
+    await generateMonthlyBills(taskResult.id, memberId, member.distributor_id, signDate, expireDate, monthlyAmount);
+
+    await db.run(
+      'INSERT INTO operation_logs (user_id, action, target_type, target_id, details) VALUES (?, ?, ?, ?, ?)',
+      [req.user.id, 'create_task', 'labor_task', taskResult.id, `为成员启动劳动任务: ${member.name}`]
+    );
+
+    res.json({ success: true, message: '任务创建成功', data: { taskId: taskResult.id } });
+  } catch (error) {
+    console.error('启动任务错误:', error);
+    res.status(500).json({ success: false, message: '服务器错误' });
+  }
+};
+
 module.exports = {
   getMemberPool,
   addToPool,
   createLaborTask,
+  startTaskForMember,
   exitLaborTask,
   getLaborTasks
 };

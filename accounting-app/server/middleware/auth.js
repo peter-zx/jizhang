@@ -33,6 +33,16 @@ const adminOnly = (req, res, next) => {
   next();
 };
 
+const adminOrDistributorA = (req, res, next) => {
+  if (req.user.role !== 'admin' && req.user.role !== 'distributor_a') {
+    return res.status(403).json({ 
+      success: false, 
+      message: '需要管理员或A层分销权限' 
+    });
+  }
+  next();
+};
+
 const distributorOrAdmin = (req, res, next) => {
   if (!['admin', 'distributor_a', 'distributor_b'].includes(req.user.role)) {
     return res.status(403).json({ 
@@ -46,5 +56,6 @@ const distributorOrAdmin = (req, res, next) => {
 module.exports = {
   authMiddleware,
   adminOnly,
+  adminOrDistributorA,
   distributorOrAdmin
 };

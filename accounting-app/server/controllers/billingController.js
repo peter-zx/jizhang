@@ -229,6 +229,61 @@ const markReminderRead = async (req, res) => {
   }
 };
 
+// 获取管理员仪表盘汇总数据
+const getAdminDashboardSummary = async (req, res) => {
+  try {
+    const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+    
+    // 1. 总体收纳情况 (从 accounting_records)
+    const overallStats = await db.get(`
+      SELECT 
+        SUM(received_amount) as total_received,
+        SUM(deposit) as total_deposit,
+        SUM(insurance) as total_insurance,
+        SUM(commission) as total_commission,
+        SUM(net_revenue) as total_net_revenue
+      FROM accounting_records
+      WHERE STRFTIME('%Y-%m', record_date) = ?
+    `, [currentMonth]);
+
+    // 2. 预计收纳情况 (从 monthly_bills)
+    const expectedStats = await db.get(`
+      SELECT 
+        COUNT(*) as total_tasks,
+        SUM(monthly_amount) as expected_amount
+      FROM monthly_bills
+      WHERE bill_month = ?
+    `, [currentMonth]);
+
+    // 3. 每个分销商的任务情况
+    const distributorStats = await db.all(`
+      SELECT 
+        u.id,
+        u.name,
+        u.role,
+        (SELECT COUNT(*) FROM members WHERE distributor_id = u.id AND status = 'active') as active_members,
+        (SELECT SUM(monthly_amount) FROM monthly_bills WHERE distributor_id = u.id AND bill_month = ?) as expected_revenue,
+        (SELECT SUM(received_amount) FROM accounting_records WHERE distributor_id = u.id AND STRFTIME('%Y-%m', record_date) = ?) as actual_received,
+        (SELECT SUM(commission) FROM accounting_records WHERE distributor_id = u.id AND STRFTIME('%Y-%m', record_date) = ?) as total_commission
+      FROM users u
+      WHERE u.role IN ('distributor_a', 'distributor_b')
+    `, [currentMonth, currentMonth, currentMonth]);
+
+    res.json({
+      success: true,
+      data: {
+        currentMonth,
+        overall: overallStats || { total_received: 0, total_deposit: 0, total_insurance: 0, total_commission: 0, total_net_revenue: 0 },
+        expected: expectedStats || { total_tasks: 0, expected_amount: 0 },
+        distributors: distributorStats
+      }
+    });
+  } catch (error) {
+    console.error('获取管理员汇总错误:', error);
+    res.status(500).json({ success: false, message: '服务器错误' });
+  }
+};
+
 module.exports = {
   getMonthlyBills,
   confirmBill,
@@ -236,5 +291,6 @@ module.exports = {
   getMonthlyRentCollection,
   generateMonthlyReminder,
   getReminders,
-  markReminderRead
+  markReminderRead,
+  getAdminDashboardSummary
 };

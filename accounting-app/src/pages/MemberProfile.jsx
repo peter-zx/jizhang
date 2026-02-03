@@ -7,6 +7,7 @@ function MemberProfile() {
   const navigate = useNavigate();
   const [member, setMember] = useState(null);
   const [records, setRecords] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,6 +21,7 @@ function MemberProfile() {
       if (response.success) {
         setMember(response.data.member);
         setRecords(response.data.records);
+        setTasks(response.data.tasks);
         setStats(response.data.stats);
       }
     } catch (error) {
@@ -184,6 +186,51 @@ function MemberProfile() {
           </div>
         </div>
       )}
+
+      {/* 合同任务信息 */}
+      <div className="card">
+        <h3 className="card-title">劳动合同与任务</h3>
+        {tasks.length > 0 ? (
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>签约日期</th>
+                  <th>年限</th>
+                  <th>到期日期</th>
+                  <th>月度总任务金</th>
+                  <th>状态</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tasks.map(task => (
+                  <tr key={task.id}>
+                    <td>{task.contract_sign_date}</td>
+                    <td>{task.contract_years}年</td>
+                    <td>{task.contract_expire_date}</td>
+                    <td style={{ fontWeight: 'bold', color: '#27ae60' }}>¥{task.monthly_amount.toLocaleString()}</td>
+                    <td>
+                      <span style={{ 
+                        padding: '4px 8px', 
+                        borderRadius: '4px', 
+                        background: task.task_status === 'active' ? '#27ae60' : '#bdc3c7',
+                        color: 'white',
+                        fontSize: '12px'
+                      }}>
+                        {task.task_status === 'active' ? '进行中' : '已退出'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p style={{ textAlign: 'center', color: '#7f8c8d', padding: '20px' }}>
+            该成员暂无合同任务信息
+          </p>
+        )}
+      </div>
 
       {/* 账本记录 */}
       <div className="card">

@@ -22,6 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // 静态文件服务
 app.use(express.static(path.join(__dirname, '../dist')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // API路由
 app.use('/api/auth', authRoutes);

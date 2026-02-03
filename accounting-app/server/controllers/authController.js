@@ -124,7 +124,7 @@ const register = async (req, res) => {
     // 根据邀请码确定角色和佣金比例
     let commissionRate = 0;
     if (invite.role === 'distributor_a') {
-      commissionRate = 6;
+      commissionRate = 10;
     } else if (invite.role === 'distributor_b') {
       commissionRate = 8;
     }
@@ -166,10 +166,18 @@ const register = async (req, res) => {
   }
 };
 
-// 生成邀请码（仅管理员）
+// 生成邀请码（管理员或A层分销）
 const generateInviteCode = async (req, res) => {
   try {
     const { role, count = 1 } = req.body;
+
+    // 权限校验：A层分销只能生成B层邀请码
+    if (req.user.role === 'distributor_a' && role !== 'distributor_b') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'A层分销只能生成B层邀请码' 
+      });
+    }
 
     if (!['distributor_a', 'distributor_b'].includes(role)) {
       return res.status(400).json({ 
@@ -208,10 +216,10 @@ const generateInviteCode = async (req, res) => {
   }
 };
 
-// 获取邀请码列表（仅管理员）
+// 获取邀请码列表（管理员或A层分销）
 const getInviteCodes = async (req, res) => {
   try {
-    const codes = await db.all(`
+    let query = `
       SELECT 
         ic.*,
         creator.name as creator_name,
@@ -219,8 +227,17 @@ const getInviteCodes = async (req, res) => {
       FROM invite_codes ic
       LEFT JOIN users creator ON ic.created_by = creator.id
       LEFT JOIN users user ON ic.used_by = user.id
-      ORDER BY ic.created_at DESC
-    `);
+    `;
+    const params = [];
+
+    // A层分销只能查看自己生成的邀请码
+    if (req.user.role === 'distributor_a') {
+      query += ' WHERE ic.created_by = ?';
+      params.push(req.user.id);
+    }
+
+    query += ' ORDER BY ic.created_at DESC';
+    const codes = await db.all(query, params);
 
     res.json({
       success: true,
@@ -256,10 +273,46 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
+// 修改个人资料（昵称、密码）
+const updateProfile = async (req, res) => {
+  try {
+    const { name, password } = req.body;
+    const userId = req.user.id;
+
+    if (!name) {
+      return res.status(400).json({ success: false, message: '昵称不能为空' });
+    }
+
+    const updates = ['name = ?'];
+    const params = [name];
+
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updates.push('password = ?');
+      params.push(hashedPassword);
+    }
+
+    params.push(userId);
+    await db.run(
+      `UPDATE users SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      params
+    );
+
+    res.json({
+      success: true,
+      message: '个人资料已更新'
+    });
+  } catch (error) {
+    console.error('更新资料错误:', error);
+    res.status(500).json({ success: false, message: '服务器错误' });
+  }
+};
+
 module.exports = {
   login,
   register,
   generateInviteCode,
   getInviteCodes,
-  getCurrentUser
+  getCurrentUser,
+  updateProfile
 };
