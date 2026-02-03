@@ -255,16 +255,25 @@ const getAdminDashboardSummary = async (req, res) => {
       WHERE bill_month = ?
     `, [currentMonth]);
 
-    // 3. 每个分销商的任务情况
+    // 3. 每个分销商的任务情况 (只统计在职成员)
     const distributorStats = await db.all(`
       SELECT 
         u.id,
         u.name,
         u.role,
         (SELECT COUNT(*) FROM members WHERE distributor_id = u.id AND status = 'active') as active_members,
-        (SELECT SUM(monthly_amount) FROM monthly_bills WHERE distributor_id = u.id AND bill_month = ?) as expected_revenue,
-        (SELECT SUM(received_amount) FROM accounting_records WHERE distributor_id = u.id AND STRFTIME('%Y-%m', record_date) = ?) as actual_received,
-        (SELECT SUM(commission) FROM accounting_records WHERE distributor_id = u.id AND STRFTIME('%Y-%m', record_date) = ?) as total_commission
+        (SELECT SUM(mb.monthly_amount) 
+         FROM monthly_bills mb 
+         JOIN members m ON mb.member_id = m.id 
+         WHERE mb.distributor_id = u.id AND mb.bill_month = ? AND m.status = 'active') as expected_revenue,
+        (SELECT SUM(ar.received_amount) 
+         FROM accounting_records ar 
+         JOIN members m ON ar.member_id = m.id 
+         WHERE ar.distributor_id = u.id AND STRFTIME('%Y-%m', ar.record_date) = ? AND m.status = 'active') as actual_received,
+        (SELECT SUM(ar.commission) 
+         FROM accounting_records ar 
+         JOIN members m ON ar.member_id = m.id 
+         WHERE ar.distributor_id = u.id AND STRFTIME('%Y-%m', ar.record_date) = ? AND m.status = 'active') as total_commission
       FROM users u
       WHERE u.role IN ('distributor_a', 'distributor_b')
     `, [currentMonth, currentMonth, currentMonth]);

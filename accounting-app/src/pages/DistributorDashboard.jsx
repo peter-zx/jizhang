@@ -4,6 +4,8 @@ import MemberManagement from './MemberManagement'
 import AccountingBook from './AccountingBook'
 import MonthlyBilling from './MonthlyBilling'
 import RentCollection from './RentCollection'
+import ContractManagement from './ContractManagement'
+import AmountManagement from './AmountManagement'
 
 function DistributorDashboard({ user, onLogout }) {
   const location = useLocation()
@@ -57,6 +59,18 @@ function DistributorDashboard({ user, onLogout }) {
           >
             💰 收租情况
           </Link>
+          <Link 
+            to="/distributor/contracts" 
+            className={location.pathname === '/distributor/contracts' ? 'active' : ''}
+          >
+            📋 合同管理
+          </Link>
+          <Link 
+            to="/distributor/amounts" 
+            className={location.pathname === '/distributor/amounts' ? 'active' : ''}
+          >
+            💵 金额管理
+          </Link>
         </nav>
         <div className="user-info">
           <p><strong>{user.name}</strong></p>
@@ -72,6 +86,8 @@ function DistributorDashboard({ user, onLogout }) {
           <Route path="/accounting" element={<AccountingBook user={user} />} />
           <Route path="/billing" element={<MonthlyBilling user={user} />} />
           <Route path="/rent" element={<RentCollection user={user} />} />
+          <Route path="/contracts" element={<ContractManagement user={user} />} />
+          <Route path="/amounts" element={<AmountManagement user={user} />} />
         </Routes>
       </main>
     </div>

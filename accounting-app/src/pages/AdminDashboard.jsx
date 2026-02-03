@@ -8,6 +8,8 @@ import MonthlyBilling from './MonthlyBilling'
 import RentCollection from './RentCollection'
 import InviteCodeManagement from './InviteCodeManagement'
 import AdminDistributorFeatures from './AdminDistributorFeatures'
+import ContractManagement from './ContractManagement'
+import AmountManagement from './AmountManagement'
 
 function AdminDashboard({ user, onLogout }) {
   const location = useLocation()
@@ -85,6 +87,18 @@ function AdminDashboard({ user, onLogout }) {
             🎫 邀请码管理
           </Link>
           <Link 
+            to="/admin/contracts" 
+            className={location.pathname === '/admin/contracts' ? 'active' : ''}
+          >
+            📋 合同管理
+          </Link>
+          <Link 
+            to="/admin/amounts" 
+            className={location.pathname === '/admin/amounts' ? 'active' : ''}
+          >
+            💵 金额管理
+          </Link>
+          <Link 
             to="/admin/my-members" 
             className={location.pathname.startsWith('/admin/my-members') ? 'active' : ''}
           >
@@ -107,6 +121,8 @@ function AdminDashboard({ user, onLogout }) {
           <Route path="billing" element={<MonthlyBilling user={user} />} />
           <Route path="rent" element={<RentCollection user={user} />} />
           <Route path="invites" element={<InviteCodeManagement user={user} />} />
+          <Route path="contracts" element={<ContractManagement user={user} />} />
+          <Route path="amounts" element={<AmountManagement user={user} />} />
           <Route path="my-members/*" element={<AdminDistributorFeatures user={user} />} />
         </Routes>
       </main>

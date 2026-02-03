@@ -5,6 +5,7 @@ export const authAPI = {
   login: (credentials) => apiClient.post('/auth/login', credentials),
   register: (userData) => apiClient.post('/auth/register', userData),
   getCurrentUser: () => apiClient.get('/auth/me'),
+  updateProfile: (data) => apiClient.put('/auth/profile', data),
   generateInviteCode: (data) => apiClient.post('/auth/invite-codes', data),
   getInviteCodes: () => apiClient.get('/auth/invite-codes')
 };
@@ -16,7 +17,21 @@ export const memberAPI = {
   createMember: (data) => apiClient.post('/members', data),
   updateMember: (id, data) => apiClient.put(`/members/${id}`, data),
   deleteMember: (id) => apiClient.delete(`/members/${id}`),
-  getExpiringDocuments: (days = 30) => apiClient.get('/members/expiring', { params: { days } })
+  getExpiringDocuments: (days = 30) => apiClient.get('/members/expiring', { params: { days } }),
+  uploadFiles: (id, formData) => apiClient.post(`/members/${id}/upload`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  downloadFiles: (id) => apiClient.get(`/members/${id}/download`, { responseType: 'blob' }),
+  importMembers: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.post('/members/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  downloadTemplate: () => apiClient.get('/members/template/download', { responseType: 'blob' }),
+  bulkSetAmount: (data) => apiClient.post('/members/bulk/amount', data),
+  bulkSetContract: (data) => apiClient.post('/members/bulk/contract', data)
 };
 
 // 账本相关API

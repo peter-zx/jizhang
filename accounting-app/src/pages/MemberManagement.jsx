@@ -9,6 +9,8 @@ function MemberManagement({ user }) {
   const [distributors, setDistributors] = useState([])
   const [modalStep, setModalStep] = useState(1) // 1: 个人信息, 2: 金额数据, 3: 合同数据
   const [newMemberId, setNewMemberId] = useState(null)
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [importFile, setImportFile] = useState(null)
   
   const [formData, setFormData] = useState({
     name: '',
@@ -180,11 +182,54 @@ function MemberManagement({ user }) {
     return new Date(expireDate) < new Date()
   }
 
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await memberAPI.downloadTemplate()
+      const url = window.URL.createObjectURL(new Blob([response]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', '成员导入模板.xlsx')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+    } catch (error) {
+      console.error('下载模板失败:', error)
+      alert('下载模板失败')
+    }
+  }
+
+  const handleImport = async (e) => {
+    e.preventDefault()
+    if (!importFile) {
+      alert('请选择文件')
+      return
+    }
+
+    try {
+      const response = await memberAPI.importMembers(importFile)
+      if (response.success) {
+        alert(response.message)
+        setShowImportModal(false)
+        setImportFile(null)
+        loadMembers()
+      }
+    } catch (error) {
+      console.error('导入失败:', error)
+      alert('导入失败: ' + (error.response?.data?.message || error.message))
+    }
+  }
+
   return (
     <>
       <div className="page-header">
         <h2>成员管理</h2>
-        <div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button className="btn btn-warning btn-sm" onClick={handleDownloadTemplate}>
+            📥 下载模板
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={() => setShowImportModal(true)}>
+            📤 批量导入
+          </button>
           {(user.role === 'admin' || user.role.includes('distributor')) && (
             <button className="btn btn-success" onClick={handleAdd}>
               + 添加成员
@@ -246,7 +291,7 @@ function MemberManagement({ user }) {
                       color: member.status === 'active' ? '#27ae60' : '#e74c3c',
                       fontWeight: 'bold'
                     }}>
-                      {member.status === 'active' ? '正常' : '暂停'}
+                      {member.status === 'active' ? '在职' : '离职'}
                     </span>
                   </td>
                   <td>
@@ -280,7 +325,7 @@ function MemberManagement({ user }) {
 
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal modal-large" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>
                 {editingMember ? '编辑成员' : (
@@ -485,9 +530,8 @@ function MemberManagement({ user }) {
                         value={formData.status}
                         onChange={handleInputChange}
                       >
-                        <option value="active">正常</option>
-                        <option value="inactive">暂停</option>
-                        <option value="closed">注销</option>
+                        <option value="active">在职</option>
+                        <option value="resigned">离职</option>
                       </select>
                     </div>
                   </div>
@@ -559,6 +603,50 @@ function MemberManagement({ user }) {
                 <button type="submit" className="btn btn-primary">
                   {modalStep === 3 || editingMember ? '保存' : '下一步'}
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showImportModal && (
+        <div className="modal-overlay" onClick={() => setShowImportModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h3>批量导入成员</h3>
+              <button className="close-btn" onClick={() => setShowImportModal(false)}>×</button>
+            </div>
+            <form onSubmit={handleImport}>
+              <div className="form-group">
+                <label>选择 Excel/CSV 文件 *</label>
+                <input 
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={(e) => setImportFile(e.target.files[0])}
+                  className="form-control"
+                  required
+                />
+                <p style={{ fontSize: '12px', color: '#7f8c8d', marginTop: '8px' }}>
+                  支持 Excel (.xlsx) 和 CSV 格式文件
+                </p>
+              </div>
+              <div style={{ 
+                background: '#ecf0f1', 
+                padding: '15px', 
+                borderRadius: '5px',
+                marginBottom: '20px'
+              }}>
+                <h4 style={{ fontSize: '14px', marginBottom: '10px' }}>📋 导入说明</h4>
+                <ul style={{ marginBottom: 0, paddingLeft: '20px', fontSize: '13px' }}>
+                  <li>请先下载模板文件，按照模板格式填写数据</li>
+                  <li>必填字段：姓名、电话、城市</li>
+                  <li>选填字段：年龄、性别、地址</li>
+                  <li>导入的成员将自动关联到您的账号下</li>
+                </ul>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn" onClick={() => setShowImportModal(false)}>取消</button>
+                <button type="submit" className="btn btn-primary">开始导入</button>
               </div>
             </form>
           </div>
