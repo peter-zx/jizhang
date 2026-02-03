@@ -75,3 +75,23 @@ export const exportAPI = {
       });
   }
 };
+
+// 人员海和劳动任务API
+export const laborAPI = {
+  getMemberPool: (params) => apiClient.get('/labor/pool', { params }),
+  addToPool: (data) => apiClient.post('/labor/pool', data),
+  getLaborTasks: (params) => apiClient.get('/labor/tasks', { params }),
+  createLaborTask: (data) => apiClient.post('/labor/tasks', data),
+  exitLaborTask: (taskId, data) => apiClient.post(`/labor/tasks/${taskId}/exit`, data)
+};
+
+// 月度账单API
+export const billingAPI = {
+  getMonthlyBills: (params) => apiClient.get('/billing/bills', { params }),
+  confirmBill: (id, data) => apiClient.post(`/billing/bills/${id}/confirm`, data),
+  getCurrentMonthStats: () => apiClient.get('/billing/stats/current'),
+  getMonthlyRentCollection: (params) => apiClient.get('/billing/rent-collection', { params }),
+  getReminders: () => apiClient.get('/billing/reminders'),
+  markReminderRead: (id) => apiClient.post(`/billing/reminders/${id}/read`),
+  generateMonthlyReminder: () => apiClient.post('/billing/reminders/generate')
+};

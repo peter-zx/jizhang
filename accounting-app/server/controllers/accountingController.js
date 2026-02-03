@@ -68,6 +68,8 @@ const createRecord = async (req, res) => {
       receivedAmount,
       deposit,
       insurance,
+      commission,
+      commissionType,
       recordDate,
       city,
       notes
@@ -97,24 +99,31 @@ const createRecord = async (req, res) => {
       });
     }
 
-    // 获取分销商的佣金比例
-    const distributor = await db.get(
-      'SELECT commission_rate FROM users WHERE id = ?',
-      [member.distributor_id]
-    );
+    let finalCommission = 0;
+    
+    // 根据佣金类型计算
+    if (commissionType === 'amount') {
+      // 固定金额
+      finalCommission = parseFloat(commission || 0);
+    } else {
+      // 比例计算
+      const distributor = await db.get(
+        'SELECT commission_rate FROM users WHERE id = ?',
+        [member.distributor_id]
+      );
+      finalCommission = receivedAmount * (distributor.commission_rate / 100);
+    }
 
-    // 计算佣金和净收入
-    const commission = receivedAmount * (distributor.commission_rate / 100);
-    const netRevenue = receivedAmount - deposit - insurance - commission;
+    const netRevenue = receivedAmount - deposit - insurance - finalCommission;
 
     const result = await db.run(`
       INSERT INTO accounting_records (
         member_id, distributor_id, received_amount, deposit, insurance,
-        commission, net_revenue, record_date, city, notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        commission, commission_type, net_revenue, record_date, city, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       memberId, member.distributor_id, receivedAmount, deposit, insurance,
-      commission, netRevenue, recordDate, city, notes
+      finalCommission, commissionType || 'rate', netRevenue, recordDate, city, notes
     ]);
 
     // 记录操作日志

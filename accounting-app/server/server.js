@@ -10,6 +10,8 @@ const memberRoutes = require('./routes/memberRoutes');
 const accountingRoutes = require('./routes/accountingRoutes');
 const userRoutes = require('./routes/userRoutes');
 const exportRoutes = require('./routes/exportRoutes');
+const laborRoutes = require('./routes/laborRoutes');
+const billingRoutes = require('./routes/billingRoutes');
 
 const app = express();
 
@@ -27,6 +29,8 @@ app.use('/api/members', memberRoutes);
 app.use('/api/accounting', accountingRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/labor', laborRoutes);
+app.use('/api/billing', billingRoutes);
 
 // 健康检查
 app.get('/api/health', (req, res) => {

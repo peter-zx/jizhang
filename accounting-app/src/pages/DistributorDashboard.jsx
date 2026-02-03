@@ -2,6 +2,8 @@ import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import MemberManagement from './MemberManagement'
 import AccountingBook from './AccountingBook'
+import MonthlyBilling from './MonthlyBilling'
+import RentCollection from './RentCollection'
 
 function DistributorDashboard({ user, onLogout }) {
   const location = useLocation()
@@ -43,6 +45,18 @@ function DistributorDashboard({ user, onLogout }) {
           >
             📖 账本管理
           </Link>
+          <Link 
+            to="/distributor/billing" 
+            className={location.pathname === '/distributor/billing' ? 'active' : ''}
+          >
+            💳 月度账单
+          </Link>
+          <Link 
+            to="/distributor/rent" 
+            className={location.pathname === '/distributor/rent' ? 'active' : ''}
+          >
+            💰 收租情况
+          </Link>
         </nav>
         <div className="user-info">
           <p><strong>{user.name}</strong></p>
@@ -56,6 +70,8 @@ function DistributorDashboard({ user, onLogout }) {
           <Route path="/overview" element={<DistributorOverview stats={stats} user={user} />} />
           <Route path="/members" element={<MemberManagement user={user} />} />
           <Route path="/accounting" element={<AccountingBook user={user} />} />
+          <Route path="/billing" element={<MonthlyBilling user={user} />} />
+          <Route path="/rent" element={<RentCollection user={user} />} />
         </Routes>
       </main>
     </div>

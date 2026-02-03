@@ -35,6 +35,8 @@ function AccountingBook({ user }) {
     receivedAmount: '',
     deposit: '',
     insurance: '',
+    commission: '',
+    commissionType: 'rate',
     city: '',
     date: new Date().toISOString().split('T')[0]
   })
@@ -74,18 +76,25 @@ function AccountingBook({ user }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     
-    // 计算佣金（假设A层6%，B层8%）
-    const commission = formData.receivedAmount * 0.07
+    // 计算佣金和净收入
+    let finalCommission = 0;
+    if (formData.commissionType === 'amount') {
+      // 固定金额
+      finalCommission = parseFloat(formData.commission) || 0;
+    } else {
+      // 比例计算（基于分销商的佣金比例）
+      const commissionRate = user.role === 'admin' ? 6 : (user.role === 'distributor_a' ? 6 : 8);
+      finalCommission = parseFloat(formData.receivedAmount) * (commissionRate / 100);
+    }
     
-    // 计算净收入
-    const netRevenue = formData.receivedAmount - formData.deposit - formData.insurance - commission
+    const netRevenue = parseFloat(formData.receivedAmount) - parseFloat(formData.deposit) - parseFloat(formData.insurance) - finalCommission
     
     const newRecord = {
       ...formData,
       receivedAmount: parseFloat(formData.receivedAmount),
       deposit: parseFloat(formData.deposit),
       insurance: parseFloat(formData.insurance),
-      commission: commission,
+      commission: finalCommission,
       netRevenue: netRevenue,
       distributor: user.name
     }
@@ -252,6 +261,34 @@ function AccountingBook({ user }) {
                   />
                 </div>
                 <div className="form-group">
+                  <label>佣金类型</label>
+                  <select
+                    name="commissionType"
+                    className="form-control"
+                    value={formData.commissionType}
+                    onChange={handleInputChange}
+                  >
+                    <option value="rate">按比例</option>
+                    <option value="amount">固定金额</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>佣金</label>
+                  <input
+                    type="number"
+                    name="commission"
+                    className="form-control"
+                    value={formData.commission}
+                    onChange={handleInputChange}
+                    step="0.01"
+                    placeholder={formData.commissionType === 'rate' ? '按比例自动计算' : '输入固定金额'}
+                    disabled={formData.commissionType === 'rate'}
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
                   <label>保障金 *</label>
                   <input
                     type="number"
@@ -263,9 +300,6 @@ function AccountingBook({ user }) {
                     required
                   />
                 </div>
-              </div>
-
-              <div className="form-row">
                 <div className="form-group">
                   <label>保险金额 *</label>
                   <input
@@ -276,16 +310,6 @@ function AccountingBook({ user }) {
                     onChange={handleInputChange}
                     step="0.01"
                     required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>城市</label>
-                  <input
-                    type="text"
-                    name="city"
-                    className="form-control"
-                    value={formData.city}
-                    onChange={handleInputChange}
                   />
                 </div>
               </div>

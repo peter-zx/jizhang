@@ -158,6 +158,7 @@ class Database {
             deposit REAL NOT NULL,
             insurance REAL NOT NULL,
             commission REAL NOT NULL,
+            commission_type TEXT DEFAULT 'rate',
             net_revenue REAL NOT NULL,
             record_date DATE NOT NULL,
             city TEXT,

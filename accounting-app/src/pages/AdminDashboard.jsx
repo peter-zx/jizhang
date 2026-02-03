@@ -3,6 +3,10 @@ import { useState, useEffect } from 'react'
 import MemberManagement from './MemberManagement'
 import AccountingBook from './AccountingBook'
 import DistributorManagement from './DistributorManagement'
+import MonthlyBilling from './MonthlyBilling'
+import RentCollection from './RentCollection'
+import InviteCodeManagement from './InviteCodeManagement'
+import AdminDistributorFeatures from './AdminDistributorFeatures'
 
 function AdminDashboard({ user, onLogout }) {
   const location = useLocation()
@@ -53,6 +57,30 @@ function AdminDashboard({ user, onLogout }) {
           >
             🏢 分销管理
           </Link>
+          <Link 
+            to="/admin/billing" 
+            className={location.pathname === '/admin/billing' ? 'active' : ''}
+          >
+            💳 月度账单
+          </Link>
+          <Link 
+            to="/admin/rent" 
+            className={location.pathname === '/admin/rent' ? 'active' : ''}
+          >
+            💰 收租情况
+          </Link>
+          <Link 
+            to="/admin/invites" 
+            className={location.pathname === '/admin/invites' ? 'active' : ''}
+          >
+            🎫 邀请码管理
+          </Link>
+          <Link 
+            to="/admin/my-members" 
+            className={location.pathname === '/admin/my-members' ? 'active' : ''}
+          >
+            👤 我的成员
+          </Link>
         </nav>
         <div className="user-info">
           <p><strong>{user.name}</strong></p>
@@ -67,6 +95,10 @@ function AdminDashboard({ user, onLogout }) {
           <Route path="/members" element={<MemberManagement user={user} />} />
           <Route path="/accounting" element={<AccountingBook user={user} />} />
           <Route path="/distributors" element={<DistributorManagement user={user} />} />
+          <Route path="/billing" element={<MonthlyBilling user={user} />} />
+          <Route path="/rent" element={<RentCollection user={user} />} />
+          <Route path="/invites" element={<InviteCodeManagement user={user} />} />
+          <Route path="/my-members/*" element={<AdminDistributorFeatures user={user} />} />
         </Routes>
       </main>
     </div>
