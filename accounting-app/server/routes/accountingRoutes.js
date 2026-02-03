@@ -9,6 +9,7 @@ router.use(distributorOrAdmin);
 router.get('/', accountingController.getRecords);
 router.get('/statistics', accountingController.getStatistics);
 router.post('/', accountingController.createRecord);
+router.post('/clear-all', accountingController.clearAllRecords);
 router.put('/:id', accountingController.updateRecord);
 router.delete('/:id', accountingController.deleteRecord);
 

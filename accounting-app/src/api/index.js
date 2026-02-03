@@ -42,7 +42,8 @@ export const accountingAPI = {
   createRecord: (data) => apiClient.post('/accounting', data),
   updateRecord: (id, data) => apiClient.put(`/accounting/${id}`, data),
   deleteRecord: (id) => apiClient.delete(`/accounting/${id}`),
-  getStatistics: (params) => apiClient.get('/accounting/statistics', { params })
+  getStatistics: (params) => apiClient.get('/accounting/statistics', { params }),
+  clearAllRecords: () => apiClient.post('/accounting/clear-all')
 };
 
 // 用户和分销商相关API

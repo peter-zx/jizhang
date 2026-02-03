@@ -1,32 +1,42 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { accountingAPI } from '../api'
 
 function AccountingBook({ user }) {
-  const [records, setRecords] = useState([
-    {
-      id: 1,
-      memberName: '张三',
-      receivedAmount: 8000,
-      deposit: 1000,
-      insurance: 500,
-      commission: 600,
-      city: '北京',
-      distributor: 'A层分销-李明',
-      date: '2026-02-01',
-      netRevenue: 5900
-    },
-    {
-      id: 2,
-      memberName: '李四',
-      receivedAmount: 10000,
-      deposit: 1200,
-      insurance: 600,
-      commission: 800,
-      city: '上海',
-      distributor: 'B层分销-王强',
-      date: '2026-02-02',
-      netRevenue: 7400
+  const [records, setRecords] = useState([])
+  const [loading, setLoading] = useState(true)
+  
+  useEffect(() => {
+    loadRecords()
+  }, [])
+
+  const loadRecords = async () => {
+    try {
+      const response = await accountingAPI.getRecords()
+      if (response.success) {
+        setRecords(response.data.records)
+      }
+    } catch (error) {
+      console.error('加载记录失败:', error)
+    } finally {
+      setLoading(false)
     }
-  ])
+  }
+
+  const handleClearAll = async () => {
+    if (!window.confirm('确定要清空所有账本记录吗？此操作不可恢复！')) {
+      return
+    }
+
+    try {
+      const response = await accountingAPI.clearAllRecords()
+      if (response.success) {
+        alert('已清空所有账本记录')
+        loadRecords()
+      }
+    } catch (error) {
+      alert('清空失败: ' + (error.response?.data?.message || error.message))
+    }
+  }
   
   const [showModal, setShowModal] = useState(false)
   const [editingRecord, setEditingRecord] = useState(null)
@@ -126,6 +136,15 @@ function AccountingBook({ user }) {
       <div className="page-header">
         <h2>账本管理</h2>
         <div>
+          {user.role === 'admin' && records.length > 0 && (
+            <button 
+              className="btn btn-danger" 
+              onClick={handleClearAll}
+              style={{ marginRight: '10px' }}
+            >
+              清空所有记录
+            </button>
+          )}
           {(user.role === 'admin' || user.role.includes('distributor')) && (
             <button className="btn btn-success" onClick={handleAdd}>
               + 添加记录
@@ -176,39 +195,47 @@ function AccountingBook({ user }) {
               </tr>
             </thead>
             <tbody>
-              {records.map(record => (
-                <tr key={record.id}>
-                  <td>{record.date}</td>
-                  <td>{record.memberName}</td>
-                  <td style={{ color: '#27ae60', fontWeight: 'bold' }}>
-                    ¥{record.receivedAmount.toLocaleString()}
-                  </td>
-                  <td>¥{record.deposit.toLocaleString()}</td>
-                  <td>¥{record.insurance.toLocaleString()}</td>
-                  <td style={{ color: '#f39c12' }}>¥{record.commission.toLocaleString()}</td>
-                  <td style={{ color: '#3498db', fontWeight: 'bold' }}>
-                    ¥{record.netRevenue.toLocaleString()}
-                  </td>
-                  <td>{record.city}</td>
-                  <td>{record.distributor}</td>
-                  <td>
-                    <div className="action-btns">
-                      {(user.role === 'admin' || user.role.includes('distributor')) && (
-                        <>
-                          <button className="btn btn-primary btn-sm" onClick={() => handleEdit(record)}>
-                            编辑
-                          </button>
-                          {user.role === 'admin' && (
-                            <button className="btn btn-danger btn-sm" onClick={() => handleDelete(record.id)}>
-                              删除
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </div>
+              {records.length === 0 ? (
+                <tr>
+                  <td colSpan="10" style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
+                    暂无记录
                   </td>
                 </tr>
-              ))}
+              ) : (
+                records.map(record => (
+                  <tr key={record.id}>
+                    <td>{record.record_date}</td>
+                    <td>{record.member_name}</td>
+                    <td style={{ color: '#27ae60', fontWeight: 'bold' }}>
+                      ¥{(record.received_amount || 0).toLocaleString()}
+                    </td>
+                    <td>¥{(record.deposit || 0).toLocaleString()}</td>
+                    <td>¥{(record.insurance || 0).toLocaleString()}</td>
+                    <td style={{ color: '#f39c12' }}>¥{(record.commission || 0).toLocaleString()}</td>
+                    <td style={{ color: '#3498db', fontWeight: 'bold' }}>
+                      ¥{(record.net_revenue || 0).toLocaleString()}
+                    </td>
+                    <td>{record.city}</td>
+                    <td>{record.distributor_name}</td>
+                    <td>
+                      <div className="action-btns">
+                        {(user.role === 'admin' || user.role.includes('distributor')) && (
+                          <>
+                            <button className="btn btn-primary btn-sm" onClick={() => handleEdit(record)}>
+                              编辑
+                            </button>
+                            {user.role === 'admin' && (
+                              <button className="btn btn-danger btn-sm" onClick={() => handleDelete(record.id)}>
+                                删除
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -326,10 +326,36 @@ const getStatistics = async (req, res) => {
   }
 };
 
+// 清空所有账本记录（仅管理员）
+const clearAllRecords = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ 
+        success: false, 
+        message: '仅管理员可执行此操作' 
+      });
+    }
+
+    await db.run('DELETE FROM accounting_records');
+    
+    res.json({
+      success: true,
+      message: '已清空所有账本记录'
+    });
+  } catch (error) {
+    console.error('清空账本记录错误:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: '服务器错误' 
+    });
+  }
+};
+
 module.exports = {
   getRecords,
   createRecord,
   updateRecord,
   deleteRecord,
-  getStatistics
+  getStatistics,
+  clearAllRecords
 };
