@@ -314,6 +314,13 @@ const updateDistributorSettings = async (req, res) => {
     const { commissionAmount, depositAmount, insuranceAmount } = req.body;
     const userId = req.user.id;
 
+    // 检查必填字段（允许0值）
+    if (commissionAmount === undefined || commissionAmount === null ||
+        depositAmount === undefined || depositAmount === null ||
+        insuranceAmount === undefined || insuranceAmount === null) {
+      return res.status(400).json({ success: false, message: '请填写所有金额字段' });
+    }
+
     // 检查用户
     const user = await db.get('SELECT settings_locked, role FROM users WHERE id = ?', [userId]);
     

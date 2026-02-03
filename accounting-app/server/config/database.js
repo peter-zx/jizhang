@@ -242,7 +242,27 @@ class Database {
               console.log('管理员账号: admin');
               console.log('管理员密码: admin');
               console.log('管理员邀请码:', adminInviteCode);
-              resolve();
+              
+              // 清空现有记录并插入默认示例记录
+              this.db.run('DELETE FROM accounting_records', (err) => {
+                if (err) {
+                  console.log('清空记录失败:', err);
+                }
+                
+                // 插入一条默认示例记录
+                this.db.run(`
+                  INSERT INTO accounting_records 
+                  (member_id, distributor_id, received_amount, deposit, insurance, commission, commission_type, net_revenue, record_date, city, notes)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [0, 1, 0, 0, 0, 0, 'rate', 0, new Date().toISOString().split('T')[0], '示例城市', '这是默认示例记录'], (err) => {
+                  if (err) {
+                    console.log('创建默认记录失败:', err);
+                  } else {
+                    console.log('默认示例记录已创建');
+                  }
+                  resolve();
+                });
+              });
             }
           });
         } else {

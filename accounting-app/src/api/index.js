@@ -18,7 +18,7 @@ export const memberAPI = {
   getMemberById: (id) => apiClient.get(`/members/${id}`),
   createMember: (data) => apiClient.post('/members', data),
   updateMember: (id, data) => apiClient.put(`/members/${id}`, data),
-  deleteMember: (id) => apiClient.delete(`/members/${id}`),
+  deleteMember: (id, password) => apiClient.delete(`/members/${id}`, { data: { password } }),
   getExpiringDocuments: (days = 30) => apiClient.get('/members/expiring', { params: { days } }),
   uploadFiles: (id, formData) => apiClient.post(`/members/${id}/upload`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }

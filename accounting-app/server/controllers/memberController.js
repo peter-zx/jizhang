@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const xlsx = require('xlsx');
 const archiver = require('archiver');
+const bcrypt = require('bcryptjs');
 
 // 获取成员列表
 const getMembers = async (req, res) => {
@@ -11,9 +12,11 @@ const getMembers = async (req, res) => {
       SELECT 
         m.*,
         u.name as distributor_name,
-        u.role as distributor_role
+        u.role as distributor_role,
+        lt.monthly_amount as current_monthly_amount
       FROM members m
       LEFT JOIN users u ON m.distributor_id = u.id
+      LEFT JOIN labor_tasks lt ON m.id = lt.member_id AND lt.task_status = 'active'
       WHERE 1=1
     `;
     const params = [];
@@ -441,6 +444,26 @@ const bulkSetContract = async (req, res) => {
 const deleteMember = async (req, res) => {
   try {
     const { id } = req.params;
+    const { password } = req.body;
+
+    // 验证密码
+    if (!password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: '请输入密码' 
+      });
+    }
+
+    // 获取当前用户的密码
+    const user = await db.get('SELECT password FROM users WHERE id = ?', [req.user.id]);
+    const passwordValid = await bcrypt.compare(password, user.password);
+    
+    if (!passwordValid) {
+      return res.status(401).json({ 
+        success: false, 
+        message: '密码错误' 
+      });
+    }
 
     // 检查成员是否存在
     const member = await db.get('SELECT * FROM members WHERE id = ?', [id]);
@@ -459,26 +482,24 @@ const deleteMember = async (req, res) => {
       });
     }
 
-    // 检查是否有关联的账本记录
-    const recordCount = await db.get(
-      'SELECT COUNT(*) as count FROM accounting_records WHERE member_id = ?',
-      [id]
-    );
-
-    if (recordCount.count > 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: '该成员有关联的账本记录，无法删除' 
-      });
-    }
-
+    // 删除关联数据
+    await db.run('DELETE FROM labor_tasks WHERE member_id = ?', [id]);
+    await db.run('DELETE FROM monthly_bills WHERE member_id = ?', [id]);
+    await db.run('DELETE FROM accounting_records WHERE member_id = ?', [id]);
+    
+    // 删除成员
     await db.run('DELETE FROM members WHERE id = ?', [id]);
 
     // 记录操作日志
-    await db.run(
-      'INSERT INTO operation_logs (user_id, action, target_type, target_id, details) VALUES (?, ?, ?, ?, ?)',
-      [req.user.id, 'delete_member', 'member', id, `删除成员: ${member.name}`]
-    );
+    try {
+      await db.run(
+        'INSERT INTO operation_logs (user_id, action, target_type, target_id, details) VALUES (?, ?, ?, ?, ?)',
+        [req.user.id, 'delete_member', 'member', id, `删除成员: ${member.name}`]
+      );
+    } catch (logError) {
+      // 如果operation_logs表不存在，忽略错误
+      console.log('操作日志记录失败（表可能不存在）:', logError.message);
+    }
 
     res.json({
       success: true,

@@ -135,6 +135,7 @@ function AmountManagement({ user }) {
                   <th>电话</th>
                   <th>城市</th>
                   <th>所属分销商</th>
+                  <th>当前金额</th>
                   <th>状态</th>
                 </tr>
               </thead>
@@ -152,6 +153,15 @@ function AmountManagement({ user }) {
                     <td>{member.phone}</td>
                     <td>{member.city}</td>
                     <td>{member.distributor_name}</td>
+                    <td>
+                      {member.current_monthly_amount ? (
+                        <span style={{ color: '#27ae60', fontWeight: 'bold' }}>
+                          ¥{parseFloat(member.current_monthly_amount).toLocaleString()}
+                        </span>
+                      ) : (
+                        <span style={{ color: '#95a5a6' }}>未设置</span>
+                      )}
+                    </td>
                     <td>
                       <span style={{ 
                         color: '#27ae60',

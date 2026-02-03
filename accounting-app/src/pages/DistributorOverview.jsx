@@ -170,6 +170,11 @@ function DistributorOverview({ user }) {
                   step="0.01"
                   required
                   placeholder="每个成员的佣金金额"
+                  style={{ 
+                    MozAppearance: 'textfield',
+                    WebkitAppearance: 'none',
+                    appearance: 'textfield'
+                  }}
                 />
               </div>
               <div className="form-group">
@@ -183,6 +188,11 @@ function DistributorOverview({ user }) {
                   step="0.01"
                   required
                   placeholder="保障金金额"
+                  style={{ 
+                    MozAppearance: 'textfield',
+                    WebkitAppearance: 'none',
+                    appearance: 'textfield'
+                  }}
                 />
               </div>
               <div className="form-group">
@@ -196,6 +206,11 @@ function DistributorOverview({ user }) {
                   step="0.01"
                   required
                   placeholder="保险金额"
+                  style={{ 
+                    MozAppearance: 'textfield',
+                    WebkitAppearance: 'none',
+                    appearance: 'textfield'
+                  }}
                 />
               </div>
               <div style={{ 

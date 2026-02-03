@@ -11,6 +11,9 @@ function MemberManagement({ user }) {
   const [newMemberId, setNewMemberId] = useState(null)
   const [showImportModal, setShowImportModal] = useState(false)
   const [importFile, setImportFile] = useState(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deletingMember, setDeletingMember] = useState(null)
   
   const [formData, setFormData] = useState({
     name: '',
@@ -182,6 +185,27 @@ function MemberManagement({ user }) {
     return new Date(expireDate) < new Date()
   }
 
+  const handleDeleteConfirm = async () => {
+    if (!deletePassword) {
+      alert('请输入密码')
+      return
+    }
+
+    try {
+      const response = await memberAPI.deleteMember(deletingMember.id, deletePassword)
+      if (response.success) {
+        alert('删除成功')
+        setShowDeleteModal(false)
+        setDeletePassword('')
+        setDeletingMember(null)
+        loadMembers()
+      }
+    } catch (error) {
+      console.error('删除失败:', error)
+      alert('删除失败: ' + (error.response?.data?.message || '密码错误或服务器错误'))
+    }
+  }
+
   const handleDownloadTemplate = async () => {
     try {
       const response = await memberAPI.downloadTemplate()
@@ -307,11 +331,15 @@ function MemberManagement({ user }) {
                           <button className="btn btn-primary btn-sm" onClick={() => handleEdit(member)}>
                             编辑
                           </button>
-                          {user.role === 'admin' && (
-                            <button className="btn btn-danger btn-sm" onClick={() => handleDelete(member.id)}>
-                              删除
-                            </button>
-                          )}
+                          <button 
+                            className="btn btn-danger btn-sm" 
+                            onClick={() => {
+                              setDeletingMember(member)
+                              setShowDeleteModal(true)
+                            }}
+                          >
+                            删除
+                          </button>
                         </>
                       )}
                     </div>
@@ -649,6 +677,56 @@ function MemberManagement({ user }) {
                 <button type="submit" className="btn btn-primary">开始导入</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+            <div className="modal-header">
+              <h3>确认删除</h3>
+              <button className="close-btn" onClick={() => setShowDeleteModal(false)}>×</button>
+            </div>
+            <div style={{ padding: '20px' }}>
+              <p style={{ marginBottom: '20px', color: '#e74c3c' }}>
+                ⚠️ 确定要删除成员 <strong>{deletingMember?.name}</strong> 吗？
+              </p>
+              <p style={{ marginBottom: '15px', fontSize: '14px', color: '#7f8c8d' }}>
+                此操作将永久删除该成员及相关数据，无法恢复。请输入您的登录密码以确认：
+              </p>
+              <div className="form-group">
+                <label>登录密码 *</label>
+                <input 
+                  type="password"
+                  className="form-control"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  placeholder="请输入您的登录密码"
+                  required
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button 
+                type="button" 
+                className="btn" 
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  setDeletePassword('')
+                  setDeletingMember(null)
+                }}
+              >
+                取消
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-danger" 
+                onClick={handleDeleteConfirm}
+              >
+                确认删除
+              </button>
+            </div>
           </div>
         </div>
       )}
