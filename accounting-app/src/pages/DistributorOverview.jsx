@@ -78,15 +78,13 @@ function DistributorOverview({ user }) {
       if (response.success) {
         alert('设置保存成功')
         setShowSettings(false)
-        loadUserInfo()
+        // 重新加载用户信息和统计数据
+        await loadUserInfo()
+        await loadStats()
       }
     } catch (error) {
       const message = error.response?.data?.message || error.message
-      if (message.includes('已锁定')) {
-        alert('设置已锁定，请联系管理员修改')
-      } else {
-        alert('保存失败: ' + message)
-      }
+      alert('保存失败: ' + message)
     }
   }
 

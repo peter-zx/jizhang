@@ -7,6 +7,7 @@ function MonthlyBilling({ user }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedBills, setSelectedBills] = useState([]);
 
   useEffect(() => {
     const now = new Date();
@@ -41,12 +42,10 @@ function MonthlyBilling({ user }) {
     }
   };
 
+  // 单个确认（无弹窗）
   const handleConfirm = async (billId) => {
-    if (!window.confirm('确认发放保障金？')) return;
-
     try {
       await billingAPI.confirmBill(billId, { notes: '已确认' });
-      alert('确认成功');
       loadData(selectedMonth);
       loadStats();
     } catch (error) {
@@ -54,9 +53,47 @@ function MonthlyBilling({ user }) {
     }
   };
 
+  // 批量确认
+  const handleBatchConfirm = async () => {
+    if (selectedBills.length === 0) {
+      alert('请至少选择一个账单');
+      return;
+    }
+
+    try {
+      for (const billId of selectedBills) {
+        await billingAPI.confirmBill(billId, { notes: '批量确认' });
+      }
+      alert(`成功确认 ${selectedBills.length} 个账单`);
+      setSelectedBills([]);
+      loadData(selectedMonth);
+      loadStats();
+    } catch (error) {
+      alert('批量确认失败: ' + (error.message || '服务器错误'));
+    }
+  };
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      const unconfirmedIds = bills.filter(b => b.deposit_confirmed === 0).map(b => b.id);
+      setSelectedBills(unconfirmedIds);
+    } else {
+      setSelectedBills([]);
+    }
+  };
+
+  const handleSelectBill = (billId) => {
+    if (selectedBills.includes(billId)) {
+      setSelectedBills(selectedBills.filter(id => id !== billId));
+    } else {
+      setSelectedBills([...selectedBills, billId]);
+    }
+  };
+
   const handleMonthChange = (e) => {
     const month = e.target.value;
     setSelectedMonth(month);
+    setSelectedBills([]);
     loadData(month);
   };
 
@@ -68,14 +105,22 @@ function MonthlyBilling({ user }) {
     <>
       <div className="page-header">
         <h2>月度账单确认</h2>
-        <div>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <input
             type="month"
             value={selectedMonth}
             onChange={handleMonthChange}
             className="form-control"
-            style={{ width: 'auto', display: 'inline-block' }}
+            style={{ width: 'auto' }}
           />
+          {selectedBills.length > 0 && (
+            <button 
+              className="btn btn-primary"
+              onClick={handleBatchConfirm}
+            >
+              批量确认 ({selectedBills.length})
+            </button>
+          )}
         </div>
       </div>
 
@@ -107,6 +152,13 @@ function MonthlyBilling({ user }) {
             <table>
               <thead>
                 <tr>
+                  <th>
+                    <input 
+                      type="checkbox"
+                      checked={bills.length > 0 && bills.filter(b => b.deposit_confirmed === 0).length > 0 && selectedBills.length === bills.filter(b => b.deposit_confirmed === 0).length}
+                      onChange={handleSelectAll}
+                    />
+                  </th>
                   <th>成员姓名</th>
                   <th>账单月份</th>
                   <th>月度金额</th>
@@ -120,13 +172,22 @@ function MonthlyBilling({ user }) {
               <tbody>
                 {bills.map(bill => (
                   <tr key={bill.id}>
+                    <td>
+                      {bill.deposit_confirmed === 0 && (
+                        <input 
+                          type="checkbox"
+                          checked={selectedBills.includes(bill.id)}
+                          onChange={() => handleSelectBill(bill.id)}
+                        />
+                      )}
+                    </td>
                     <td>{bill.member_name}</td>
                     <td>{bill.bill_month}</td>
                     <td style={{ fontWeight: 'bold', color: '#27ae60' }}>
                       ¥{bill.monthly_amount.toLocaleString()}
                     </td>
-                    <td>{bill.contract_sign_date}</td>
-                    <td>{bill.contract_expire_date}</td>
+                    <td>{bill.contract_sign_date || '-'}</td>
+                    <td>{bill.contract_expire_date || '-'}</td>
                     <td>
                       {bill.deposit_confirmed ? (
                         <span style={{ color: '#27ae60', fontWeight: 'bold' }}>✓ 已确认</span>
