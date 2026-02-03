@@ -244,7 +244,16 @@ class Database {
                 console.log('管理员账号: admin');
                 console.log('管理员密码: admin');
                 console.log('管理员邀请码:', adminInviteCode);
-                resolve();
+                
+                // 清空账本记录中的案例数据
+                this.db.run('DELETE FROM accounting_records', (err) => {
+                  if (err) {
+                    console.log('清空账本记录失败:', err);
+                  } else {
+                    console.log('✓ 账本记录已清空');
+                  }
+                  resolve();
+                });
               }
             });
           } else {
@@ -257,83 +266,166 @@ class Database {
 
   // 数据库迁移：添加缺失的字段
   migrateDatabase() {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       console.log('开始数据库迁移...');
       
-      // 检查并添加 users 表的新字段
-      this.db.get("PRAGMA table_info(users)", (err, info) => {
-        if (err) {
-          console.log('检查表结构失败:', err);
-        }
+      try {
+        // 使用Promise包装每个ALTER TABLE操作
+        const addColumn = (sql, columnName) => {
+          return new Promise((res) => {
+            this.db.run(sql, (err) => {
+              if (err && !err.message.includes('duplicate column name')) {
+                console.log(`添加${columnName}字段失败:`, err.message);
+              } else {
+                console.log(`✓ ${columnName} 字段已就绪`);
+              }
+              res();
+            });
+          });
+        };
+
+        // 按顺序添加字段
+        await addColumn('ALTER TABLE users ADD COLUMN commission_amount REAL DEFAULT 0', 'users.commission_amount');
+        await addColumn('ALTER TABLE users ADD COLUMN deposit_amount REAL DEFAULT 0', 'users.deposit_amount');
+        await addColumn('ALTER TABLE users ADD COLUMN insurance_amount REAL DEFAULT 0', 'users.insurance_amount');
+        await addColumn('ALTER TABLE users ADD COLUMN settings_locked INTEGER DEFAULT 0', 'users.settings_locked');
+        await addColumn('ALTER TABLE members ADD COLUMN documents TEXT DEFAULT "{}"', 'members.documents');
+        await addColumn('ALTER TABLE members ADD COLUMN additional_info TEXT DEFAULT "{}"', 'members.additional_info');
+        await addColumn('ALTER TABLE members ADD COLUMN contract_files TEXT DEFAULT "{}"', 'members.contract_files');
         
-        // 添加 commission_amount 字段
-        this.db.run('ALTER TABLE users ADD COLUMN commission_amount REAL DEFAULT 0', (err) => {
-          if (err && !err.message.includes('duplicate column name')) {
-            console.log('添加commission_amount字段失败:', err.message);
-          } else {
-            console.log('✓ users.commission_amount 字段已就绪');
-          }
+        // 修复 labor_tasks 表结构问题
+        // SQLite不支持修改列约束，需要重建表
+        await new Promise((res) => {
+          this.db.run(`
+            CREATE TABLE IF NOT EXISTS labor_tasks_new (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              member_pool_id INTEGER,
+              member_id INTEGER,
+              contract_sign_date DATE,
+              contract_years INTEGER,
+              contract_expire_date DATE,
+              monthly_amount REAL DEFAULT 0,
+              contract_files TEXT,
+              task_status TEXT DEFAULT 'active',
+              exit_date DATE,
+              exit_reason TEXT,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              FOREIGN KEY (member_id) REFERENCES members(id)
+            )
+          `, async (err) => {
+            if (err) {
+              console.log('创建新labor_tasks表失败:', err.message);
+              res();
+              return;
+            }
+            
+            // 复制数据
+            await new Promise((r) => {
+              this.db.run(`
+                INSERT INTO labor_tasks_new SELECT * FROM labor_tasks
+              `, (copyErr) => {
+                if (copyErr && !copyErr.message.includes('no such table')) {
+                  console.log('复制数据失败:', copyErr.message);
+                }
+                r();
+              });
+            });
+            
+            // 删除旧表
+            await new Promise((r) => {
+              this.db.run('DROP TABLE IF EXISTS labor_tasks', (dropErr) => {
+                if (dropErr) console.log('删除旧表失败:', dropErr.message);
+                r();
+              });
+            });
+            
+            // 重命名新表
+            await new Promise((r) => {
+              this.db.run('ALTER TABLE labor_tasks_new RENAME TO labor_tasks', (renameErr) => {
+                if (renameErr) {
+                  console.log('重命名表失败:', renameErr.message);
+                } else {
+                  console.log('✓ labor_tasks 表结构已优化');
+                }
+                r();
+              });
+            });
+            
+            res();
+          });
         });
-
-        // 添加 deposit_amount 字段
-        this.db.run('ALTER TABLE users ADD COLUMN deposit_amount REAL DEFAULT 0', (err) => {
-          if (err && !err.message.includes('duplicate column name')) {
-            console.log('添加deposit_amount字段失败:', err.message);
-          } else {
-            console.log('✓ users.deposit_amount 字段已就绪');
-          }
+        
+        // 修复 monthly_bills 表结构，允许 labor_task_id 为空
+        await new Promise((res) => {
+          this.db.run(`
+            CREATE TABLE IF NOT EXISTS monthly_bills_new (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              labor_task_id INTEGER,
+              member_id INTEGER NOT NULL,
+              distributor_id INTEGER NOT NULL,
+              bill_month TEXT NOT NULL,
+              monthly_amount REAL NOT NULL,
+              deposit_confirmed INTEGER DEFAULT 0,
+              confirmed_by INTEGER,
+              confirmed_at DATETIME,
+              notes TEXT,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              FOREIGN KEY (labor_task_id) REFERENCES labor_tasks(id),
+              FOREIGN KEY (member_id) REFERENCES members(id),
+              FOREIGN KEY (distributor_id) REFERENCES users(id),
+              FOREIGN KEY (confirmed_by) REFERENCES users(id)
+            )
+          `, async (err) => {
+            if (err) {
+              console.log('创建新monthly_bills表失败:', err.message);
+              res();
+              return;
+            }
+            
+            // 复制数据
+            await new Promise((r) => {
+              this.db.run(`
+                INSERT INTO monthly_bills_new SELECT * FROM monthly_bills
+              `, (copyErr) => {
+                if (copyErr && !copyErr.message.includes('no such table')) {
+                  console.log('复制monthly_bills数据失败:', copyErr.message);
+                }
+                r();
+              });
+            });
+            
+            // 删除旧表
+            await new Promise((r) => {
+              this.db.run('DROP TABLE IF EXISTS monthly_bills', (dropErr) => {
+                if (dropErr) console.log('删除旧monthly_bills表失败:', dropErr.message);
+                r();
+              });
+            });
+            
+            // 重命名新表
+            await new Promise((r) => {
+              this.db.run('ALTER TABLE monthly_bills_new RENAME TO monthly_bills', (renameErr) => {
+                if (renameErr) {
+                  console.log('重命名monthly_bills表失败:', renameErr.message);
+                } else {
+                  console.log('✓ monthly_bills 表结构已优化');
+                }
+                r();
+              });
+            });
+            
+            res();
+          });
         });
-
-        // 添加 insurance_amount 字段
-        this.db.run('ALTER TABLE users ADD COLUMN insurance_amount REAL DEFAULT 0', (err) => {
-          if (err && !err.message.includes('duplicate column name')) {
-            console.log('添加insurance_amount字段失败:', err.message);
-          } else {
-            console.log('✓ users.insurance_amount 字段已就绪');
-          }
-        });
-
-        // 添加 settings_locked 字段
-        this.db.run('ALTER TABLE users ADD COLUMN settings_locked INTEGER DEFAULT 0', (err) => {
-          if (err && !err.message.includes('duplicate column name')) {
-            console.log('添加settings_locked字段失败:', err.message);
-          } else {
-            console.log('✓ users.settings_locked 字段已就绪');
-          }
-        });
-
-        // 检查并添加 members 表的新字段
-        // 添加 documents 字段
-        this.db.run('ALTER TABLE members ADD COLUMN documents TEXT DEFAULT "{}"', (err) => {
-          if (err && !err.message.includes('duplicate column name')) {
-            console.log('添加documents字段失败:', err.message);
-          } else {
-            console.log('✓ members.documents 字段已就绪');
-          }
-        });
-
-        // 添加 additional_info 字段
-        this.db.run('ALTER TABLE members ADD COLUMN additional_info TEXT DEFAULT "{}"', (err) => {
-          if (err && !err.message.includes('duplicate column name')) {
-            console.log('添加additional_info字段失败:', err.message);
-          } else {
-            console.log('✓ members.additional_info 字段已就绪');
-          }
-        });
-
-        // 添加 contract_files 字段
-        this.db.run('ALTER TABLE members ADD COLUMN contract_files TEXT DEFAULT "{}"', (err) => {
-          if (err && !err.message.includes('duplicate column name')) {
-            console.log('添加contract_files字段失败:', err.message);
-          } else {
-            console.log('✓ members.contract_files 字段已就绪');
-          }
-          
-          // 所有迁移完成
-          console.log('数据库迁移完成！');
-          resolve();
-        });
-      });
+        
+        console.log('数据库迁移完成！');
+        resolve();
+      } catch (error) {
+        console.error('迁移过程出错:', error);
+        resolve(); // 即使出错也继续，避免阻塞
+      }
     });
   }
 

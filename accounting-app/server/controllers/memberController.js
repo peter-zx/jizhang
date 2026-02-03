@@ -385,22 +385,82 @@ const downloadMemberFiles = async (req, res) => {
 const bulkSetAmount = async (req, res) => {
   try {
     const { memberIds, monthlyAmount } = req.body;
+    console.log('📝 批量设置金额请求:', { memberIds, monthlyAmount });
+    
     if (!memberIds || !memberIds.length || monthlyAmount === undefined) {
       return res.status(400).json({ success: false, message: '参数不足' });
     }
 
-    // 更新 labor_tasks 表中这些成员的激活任务
-    await db.run(`
-      UPDATE labor_tasks 
-      SET monthly_amount = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE member_id IN (${memberIds.map(() => '?').join(',')}) 
-      AND task_status = 'active'
-    `, [monthlyAmount, ...memberIds]);
+    const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+    let successCount = 0;
 
-    res.json({ success: true, message: '批量设置金额成功' });
+    for (const memberId of memberIds) {
+      // 获取成员信息
+      const member = await db.get('SELECT distributor_id, status, name FROM members WHERE id = ?', [memberId]);
+      if (!member || member.status !== 'active') {
+        console.log(`⚠️ 跳过成员 ${memberId}: ${!member ? '不存在' : '状态非在职'}`);
+        continue;
+      }
+
+      console.log(`处理成员: ${member.name} (ID: ${memberId})`);
+
+      // 1. 更新或创建 labor_tasks
+      const task = await db.get('SELECT id FROM labor_tasks WHERE member_id = ? AND task_status = ?', [memberId, 'active']);
+      
+      let taskId;
+      if (task) {
+        await db.run(`
+          UPDATE labor_tasks 
+          SET monthly_amount = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `, [monthlyAmount, task.id]);
+        taskId = task.id;
+        console.log(`  ✓ 更新了labor_task ${taskId}, 金额: ${monthlyAmount}`);
+      } else {
+        // 创建新的 labor_task
+        const result = await db.run(`
+          INSERT INTO labor_tasks (member_id, monthly_amount, task_status, created_at, updated_at)
+          VALUES (?, ?, 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        `, [memberId, monthlyAmount]);
+        taskId = result.lastID;
+        console.log(`  ✓ 创建了新labor_task ${taskId}, 金额: ${monthlyAmount}`);
+      }
+
+      // 2. 生成当月的 monthly_bill（如果不存在）
+      const existingBill = await db.get(
+        'SELECT id FROM monthly_bills WHERE member_id = ? AND bill_month = ?',
+        [memberId, currentMonth]
+      );
+
+      if (!existingBill) {
+        await db.run(`
+          INSERT INTO monthly_bills (
+            member_id, distributor_id, labor_task_id, bill_month, 
+            monthly_amount, deposit_confirmed, created_at
+          ) VALUES (?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP)
+        `, [memberId, member.distributor_id, taskId, currentMonth, monthlyAmount]);
+        console.log(`  ✓ 创建了月度账单 (${currentMonth})`);
+      } else {
+        // 更新现有账单金额
+        await db.run(`
+          UPDATE monthly_bills 
+          SET monthly_amount = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `, [monthlyAmount, existingBill.id]);
+        console.log(`  ✓ 更新了月度账单 ${existingBill.id}`);
+      }
+
+      successCount++;
+    }
+
+    console.log(`✅ 批量设置完成，成功处理 ${successCount}/${memberIds.length} 个成员`);
+    res.json({ 
+      success: true, 
+      message: `批量设置金额成功，已处理 ${successCount} 位成员并生成月度账单` 
+    });
   } catch (error) {
-    console.error('批量设置金额错误:', error);
-    res.status(500).json({ success: false, message: '服务器错误' });
+    console.error('❌ 批量设置金额错误:', error);
+    res.status(500).json({ success: false, message: '服务器错误: ' + error.message });
   }
 };
 

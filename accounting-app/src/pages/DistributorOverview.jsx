@@ -18,8 +18,13 @@ function DistributorOverview({ user }) {
 
   useEffect(() => {
     loadUserInfo()
-    loadStats()
   }, [])
+
+  useEffect(() => {
+    if (userInfo) {
+      loadStats()
+    }
+  }, [userInfo])
 
   const loadUserInfo = async () => {
     try {
@@ -40,20 +45,25 @@ function DistributorOverview({ user }) {
 
   const loadStats = async () => {
     try {
-      // 加载成员数
+      // 加载成员数和金额信息
       const membersResponse = await memberAPI.getMembers({ status: 'active' })
       if (membersResponse.success) {
         const members = membersResponse.data.members
         const memberCount = members.length
         
-        // 简化计算：假设每个成员在职1个月
-        const totalMonths = memberCount * 1
+        // 计算总在职月数：每个成员算1个月（简化逻辑，实际应该计算合同月份）
+        const totalMonths = memberCount
+        
+        // 计算总营收和佣金（基于当前设置的佣金金额）
+        const commissionPerPerson = userInfo?.commission_amount || settings.commissionAmount || 0
+        const calculatedCommission = commissionPerPerson * memberCount
+        const calculatedRevenue = commissionPerPerson * totalMonths
         
         setStats({
           myMembers: memberCount,
           totalMonths: totalMonths,
-          totalRevenue: 0, // 需要从账本获取
-          myCommission: 0  // 计算：佣金 * 成员数
+          totalRevenue: calculatedRevenue,
+          myCommission: calculatedCommission
         })
       }
     } catch (error) {
@@ -136,11 +146,6 @@ function DistributorOverview({ user }) {
               <p style={{ fontSize: '20px', fontWeight: 'bold' }}>¥{settings.insuranceAmount}</p>
             </div>
           </div>
-          {userInfo?.settings_locked === 1 && (
-            <p style={{ marginTop: '15px', color: '#e74c3c', fontSize: '13px' }}>
-              🔒 设置已锁定，如需修改请联系管理员
-            </p>
-          )}
         </div>
       </div>
 
@@ -214,14 +219,14 @@ function DistributorOverview({ user }) {
                 />
               </div>
               <div style={{ 
-                background: '#fff3cd', 
+                background: '#e8f5e9', 
                 padding: '15px', 
                 borderRadius: '5px',
                 marginBottom: '20px',
-                border: '1px solid #ffc107'
+                border: '1px solid #4caf50'
               }}>
-                <p style={{ margin: 0, fontSize: '13px', color: '#856404' }}>
-                  ⚠️ 注意：设置后将被锁定，如需修改请联系管理员
+                <p style={{ margin: 0, fontSize: '13px', color: '#2e7d32' }}>
+                  💡 提示：您可以随时修改金额设置
                 </p>
               </div>
               <div className="modal-footer">
