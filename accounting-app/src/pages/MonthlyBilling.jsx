@@ -139,8 +139,11 @@ function MonthlyBilling({ user }) {
             <div className="value">{stats.pending_count || 0}</div>
           </div>
           <div className="stat-card" style={{ borderLeftColor: '#3498db' }}>
-            <h3>总金额</h3>
-            <div className="value">¥{(stats.total_amount || 0).toLocaleString()}</div>
+            <h3>本月交付金额</h3>
+            <div className="value">¥{(stats.delivery_amount || 0).toLocaleString()}</div>
+            <p style={{ fontSize: '12px', color: '#7f8c8d', marginTop: '5px' }}>
+              月度金额 - 保障金 - 佣金
+            </p>
           </div>
         </div>
       )}

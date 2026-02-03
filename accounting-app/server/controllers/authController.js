@@ -314,6 +314,8 @@ const updateDistributorSettings = async (req, res) => {
     const { commissionAmount, depositAmount, insuranceAmount } = req.body;
     const userId = req.user.id;
 
+    console.log('📝 收到金额设置请求:', { commissionAmount, depositAmount, insuranceAmount, userId });
+
     // 检查必填字段（允许0值）
     if (commissionAmount === undefined || commissionAmount === null ||
         depositAmount === undefined || depositAmount === null ||
@@ -338,13 +340,15 @@ const updateDistributorSettings = async (req, res) => {
       WHERE id = ?
     `, [commissionAmount, depositAmount, insuranceAmount, userId]);
 
+    console.log('✅ 金额设置已保存');
+
     res.json({
       success: true,
       message: '金额设置已保存'
     });
   } catch (error) {
-    console.error('设置金额错误:', error);
-    res.status(500).json({ success: false, message: '服务器错误' });
+    console.error('❌ 设置金额错误:', error);
+    res.status(500).json({ success: false, message: '服务器错误: ' + error.message });
   }
 };
 

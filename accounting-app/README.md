@@ -1,273 +1,275 @@
-# 本地离线收支记账管理系统
+# 会计应用系统 (Accounting Application)
 
-## 项目概述
+一个基于 React + Node.js 的分销商管理系统，用于管理分销商、成员、劳动任务和财务结算。
 
-这是一个基于React + Node.js + SQLite的本地离线应用，支持四层权限体系（总管理员-A层分销-B层分销-成员层），实现收支记账、团队信息统计和数据导出功能。
+## 📋 项目简介
 
-## 功能特性
+该系统支持多层级分销商管理，包括成员信息管理、金额设置、月度账单确认、账本记录等核心功能。采用前后端分离架构，提供完整的用户权限管理和数据统计功能。
 
-### 1. 用户权限体系
-- **总管理员**: 最高权限，查看所有数据，管理分销商和成员
-- **A层分销/B层分销**: 管理自己的成员，录入账本数据
-- **邀请码注册**: 需管理员邀请码才能注册
-
-### 2. 成员管理
-- ✅ 完整个人信息（姓名、年龄、性别、电话、住址、紧急联系人）
-- ✅ 双证件管理（证件一、证件二，包含注册和到期时间）
-- ✅ 证件到期预警（30天内黄色提示，已过期红色提示）
-- ✅ 成员画像详情页
-
-### 3. 合同与任务管理
-- ✅ 合同签约时间、年限、到期时间
-- ✅ 人员海（人员池）管理
-- ✅ 劳动任务管理
-- ✅ 支持手动退出劳动任务
-- ✅ 退出后可新建任务，保留历史记录
-
-### 4. 账本管理
-- ✅ 收支记录（到账、保障金、保险金额）
-- ✅ 自动计算佣金和净收入
-- ✅ 佣金支持比例/固定金额切换
-- ✅ 数据统计汇总
-
-### 5. 月度账单与收租
-- ✅ 分销层为数据源，总管理员汇总查看
-- ✅ 月度账单确认功能（确认发放保障金）
-- ✅ 自动提醒统计数据
-- ✅ 收租情况统计（按月度、完成率等）
-
-### 6. 数据导出
-- ✅ Excel格式导出成员列表
-- ✅ Excel格式导出账本记录
-- ✅ 完整报表导出（仅管理员）
-
-### 7. 邀请码管理
-- ✅ 管理员可生成A层/B层分销邀请码
-- ✅ 统计邀请码使用情况
-- ✅ 关联注册人数和分销层信息
-
-### 8. 权限增强
-- ✅ 管理员拥有分销层全部功能
-- ✅ 可新增人员、录入账本、确认账单等
-- ✅ 每月记账提醒功能
-
-## 技术栈
+## 🚀 技术栈
 
 ### 前端
-- **框架**: React 19 + Vite
-- **路由**: React Router
-- **HTTP客户端**: Axios
-- **状态管理**: Zustand
-- **样式**: CSS Modules
+- **React 18** - UI框架
+- **Vite** - 构建工具
+- **React Router** - 路由管理
+- **Axios** - HTTP客户端
 
 ### 后端
-- **运行时**: Node.js
-- **框架**: Express
-- **数据库**: SQLite3
-- **认证**: JWT
-- **密码加密**: bcryptjs
-- **Excel导出**: xlsx
+- **Node.js** - 运行环境
+- **Express** - Web框架
+- **SQLite** - 数据库
+- **bcryptjs** - 密码加密
+- **jsonwebtoken** - 身份认证
 
-### 项目结构
+## 📦 安装和启动
+
+### 环境要求
+- Node.js 14+
+- npm 6+
+
+### 安装依赖
+```bash
+cd accounting-app
+npm install
+```
+
+### 启动项目
+
+**开发环境 - 需要两个终端**
+
+终端1 - 启动后端服务（端口5000）:
+```bash
+npm run server
+```
+
+终端2 - 启动前端开发服务器（端口3000）:
+```bash
+npm run dev
+```
+
+### 访问系统
+- 前端地址: http://localhost:3000
+- 后端API: http://localhost:5000/api
+
+### 默认账号
+```
+管理员账号: admin
+密码: admin
+邀请码: (启动后端后控制台会显示)
+```
+
+## 🏗️ 项目结构
+
 ```
 accounting-app/
 ├── server/                 # 后端代码
 │   ├── config/            # 配置文件
-│   │   ├── database.js    # 数据库配置
-│   │   └── config.js      # 服务器配置
-│   ├── controllers/       # 控制器
-│   │   ├── authController.js
-│   │   ├── memberController.js
-│   │   ├── accountingController.js
-│   │   ├── userController.js
-│   │   ├── exportController.js
-│   │   ├── laborController.js
-│   │   └── billingController.js
-│   ├── middleware/        # 中间件
-│   │   └── auth.js        # 认证中间件
-│   ├── routes/            # 路由
-│   │   ├── authRoutes.js
-│   │   ├── memberRoutes.js
-│   │   ├── accountingRoutes.js
-│   │   ├── userRoutes.js
-│   │   ├── exportRoutes.js
-│   │   ├── laborRoutes.js
-│   │   └── billingRoutes.js
-│   └── server.js          # 服务器入口
+│   │   ├── config.js      # 全局配置
+│   │   └── database.js    # 数据库配置和迁移
+│   ├── controllers/       # 业务逻辑控制器
+│   │   ├── accountingController.js    # 账本管理
+│   │   ├── authController.js          # 认证和用户管理
+│   │   ├── billingController.js       # 月度账单
+│   │   ├── memberController.js        # 成员管理
+│   │   └── ...
+│   ├── routes/            # 路由定义
+│   ├── middleware/        # 中间件（认证等）
+│   └── server.js          # 服务入口
+│
 ├── src/                   # 前端代码
-│   ├── api/               # API接口
-│   │   ├── client.js      # Axios配置
-│   │   └── index.js       # API模块
 │   ├── pages/             # 页面组件
-│   │   ├── Login.jsx
-│   │   ├── Register.jsx
-│   │   ├── AdminDashboard.jsx
-│   │   ├── DistributorDashboard.jsx
-│   │   ├── MemberManagement.jsx
-│   │   ├── MemberProfile.jsx
-│   │   ├── AccountingBook.jsx
-│   │   ├── MonthlyBilling.jsx
-│   │   ├── RentCollection.jsx
-│   │   ├── InviteCodeManagement.jsx
-│   │   └── AdminDistributorFeatures.jsx
+│   │   ├── DistributorOverview.jsx   # 我的数据
+│   │   ├── MemberManagement.jsx      # 成员管理
+│   │   ├── AmountManagement.jsx      # 金额管理
+│   │   ├── MonthlyBilling.jsx        # 月度账单确认
+│   │   ├── AccountingBook.jsx        # 账本管理
+│   │   └── ...
+│   ├── api/               # API调用封装
+│   ├── components/        # 公共组件
 │   ├── styles/            # 样式文件
-│   │   └── App.css
-│   ├── App.jsx            # 应用入口
-│   └── main.jsx           # React入口
-├── data/                  # 数据库文件目录
+│   ├── App.jsx            # 主应用
+│   └── main.jsx           # 入口文件
+│
+├── data/                  # 数据库文件
 │   └── accounting.db      # SQLite数据库
-└── package.json
+│
+└── 项目交接文档.md         # 详细技术文档
 ```
 
-## 快速开始
+## 🎯 核心功能
 
-### 开发模式运行
+### 1. 用户权限管理
+- **管理员 (admin)**: 最高权限，管理所有分销商和成员
+- **A层分销商 (distributor_a)**: 佣金比例 6%
+- **B层分销商 (distributor_b)**: 佣金比例 8%
 
-1. **启动后端服务器**
-```bash
-cd accounting-app
-npm run server
+### 2. 成员管理
+- 新增/编辑/删除成员（删除需密码验证）
+- 成员状态管理（在职/离职）
+- 成员信息详情查看
+- 成员数据导入导出
+
+### 3. 金额管理
+- 批量设置成员月度金额
+- 支持0值输入
+- 实时显示当前已设置金额
+
+### 4. 金额参数设置
+- 每个分销商可设置：
+  - **佣金金额**: 每个成员的佣金
+  - **保障金金额**: 保障金额度
+  - **保险金额**: 保险费用
+- 设置后可随时修改
+
+### 5. 月度账单确认
+- 查看当月所有账单
+- 批量确认功能
+- 单个确认（无弹窗）
+- 账单统计数据展示
+
+### 6. 账本管理
+- 收支记录管理
+- 数据统计和汇总
+- 管理员可清空所有记录
+
+### 7. 数据统计
+- **我的数据**页面显示：
+  - 我的成员数
+  - 本月交付金额 = 月度金额 - 保障金 - 佣金
+  - 我的佣金
+- **月度账单**页面显示：
+  - 账单总数
+  - 已确认/待确认数量
+  - 本月交付金额
+
+## 💡 核心业务逻辑
+
+### 数据流转链路
 ```
-后端运行在 http://localhost:5000
-
-2. **启动前端开发服务器** (新终端)
-```bash
-npm run dev
-```
-前端运行在 http://localhost:3000
-
-### 默认管理员账号
-- 用户名: `admin`
-- 密码: `admin`
-- 邀请码: 启动后端服务器时会在控制台显示
-
-### 注册新用户
-1. 点击登录页的"立即注册"
-2. 输入个人信息和管理员提供的邀请码
-3. 注册成功后即可登录
-
-## API接口文档
-
-### 认证相关
-- `POST /api/auth/login` - 用户登录
-- `POST /api/auth/register` - 用户注册
-- `GET /api/auth/me` - 获取当前用户信息
-- `POST /api/auth/invite-codes` - 生成邀请码（管理员）
-- `GET /api/auth/invite-codes` - 获取邀请码列表（管理员）
-
-### 成员管理
-- `GET /api/members` - 获取成员列表
-- `GET /api/members/:id` - 获取成员详情
-- `POST /api/members` - 创建成员
-- `PUT /api/members/:id` - 更新成员
-- `DELETE /api/members/:id` - 删除成员
-- `GET /api/members/expiring` - 获取证件即将过期的成员
-
-### 账本管理
-- `GET /api/accounting` - 获取账本记录
-- `GET /api/accounting/statistics` - 获取统计数据
-- `POST /api/accounting` - 创建账本记录
-- `PUT /api/accounting/:id` - 更新账本记录
-- `DELETE /api/accounting/:id` - 删除账本记录
-
-### 人员池与任务管理
-- `GET /api/labor/pool` - 获取人员池
-- `POST /api/labor/pool` - 添加到人员池
-- `GET /api/labor/tasks` - 获取劳动任务
-- `POST /api/labor/tasks` - 创建劳动任务
-- `POST /api/labor/tasks/:id/exit` - 退出劳动任务
-
-### 月度账单
-- `GET /api/billing/bills` - 获取月度账单
-- `POST /api/billing/bills/:id/confirm` - 确认账单
-- `GET /api/billing/stats/current` - 获取当月统计
-- `GET /api/billing/rent-collection` - 获取收租情况
-- `GET /api/billing/reminders` - 获取提醒列表
-- `POST /api/billing/reminders/generate` - 生成月度提醒（管理员）
-
-### 用户管理
-- `GET /api/users/distributors` - 获取分销商列表（管理员）
-- `GET /api/users/distributors/:id` - 获取分销商详情（管理员）
-- `PUT /api/users/distributors/:id` - 更新分销商信息（管理员）
-- `GET /api/users/logs` - 获取操作日志
-
-### 数据导出
-- `GET /api/export/members` - 导出成员列表（Excel）
-- `GET /api/export/records` - 导出账本记录（Excel）
-- `GET /api/export/full-report` - 导出完整报表（Excel，管理员）
-
-## 数据流说明
-
-### 分销层为数据源
-- **分销商**负责新增、编辑、删除成员
-- **分销商**负责录入成员的账本数据
-- **总管理员**可查看所有分销商的数据汇总
-- **总管理员**拥有最高权限，可编辑所有数据
-
-### 佣金计算
-- A层分销默认佣金比例: 6%
-- B层分销默认佣金比例: 8%
-- 支持固定金额输入
-- 净收入 = 到账 - 保障金 - 保险金额 - 佣金
-- 应收账 = (到账 - 保障金 - 保险金额 - 佣金) × 人员数
-
-## 开发历程总结
-
-### 初始需求
-- 收支记账功能
-- 四层权限体系（总管理员-A层分销-B层分销-成员层）
-- 证件管理（注册时间、到期时间）
-- 保障金、保险金额等财务字段
-
-### 第一轮迭代
-- 实现基本的前后端分离架构
-- 用户登录/注册功能
-- 成员管理功能
-- 账本管理功能
-- 响应式界面设计
-
-### 第二轮迭代
-- 数据流调整：分销层为数据源，总管理员汇总查看
-- 完善成员信息字段（个人信息、紧急联系人等）
-- 成员画像详情页
-- 数据导出Excel功能
-- 邀请码注册机制
-
-### 第三轮迭代
-- 合同管理功能（签约时间、年限、到期时间）
-- 月度账单确认功能
-- 收租情况统计
-- 人员海和任务管理
-- 自动提醒功能
-
-### 第四轮迭代
-- 邀请码管理功能
-- 佣金金额/比例切换
-- 管理员拥有分销层全部功能
-- 数据库结构优化
-
-## 注意事项
-
-1. **数据安全**: 数据库存储在 `data/accounting.db`，请定期备份
-2. **邀请码管理**: 邀请码一次性使用，用完需重新生成
-3. **证件到期**: 系统会自动标记30天内到期和已过期的证件
-4. **权限控制**: 分销商只能操作自己名下的成员和数据
-5. **数据完整性**: 删除成员前需确保没有关联的账本记录
-
-## 打包部署
-
-### 构建前端
-```bash
-npm run build
+成员 (members)
+  ↓ 设置金额
+劳动任务 (labor_tasks) - 存储月度金额
+  ↓ 自动生成
+月度账单 (monthly_bills)
+  ↓ 确认后
+账本记录 (accounting_records)
 ```
 
-### 启动生产服务器
-```bash
-npm start
+### 本月交付金额计算
+```javascript
+本月交付金额 = 所有在职成员月度金额总和 - 保障金总额 - 佣金总额
+
+其中:
+- 保障金总额 = 保障金单价 × 在职成员数
+- 佣金总额 = 佣金单价 × 在职成员数
 ```
 
-## 开发者信息
+## 🗄️ 数据库表结构
 
-- 开发时间: 2026-02-03
-- 版本: 1.0.0
-- 许可证: ISC
+### 核心表
+- **users**: 用户/分销商信息
+- **members**: 成员信息
+- **labor_tasks**: 劳动任务（存储月度金额）⭐
+- **monthly_bills**: 月度账单 ⭐
+- **accounting_records**: 账本记录
+
+详细表结构请参考 [项目交接文档.md](./项目交接文档.md)
+
+## ⚙️ 配置说明
+
+### 端口配置
+- 前端默认端口: 3000
+- 后端默认端口: 5000
+- 可在 `server/config/config.js` 和 `vite.config.js` 修改
+
+### 数据库配置
+- 数据库文件: `data/accounting.db`
+- 自动创建表和初始化数据
+- 支持自动迁移机制
+
+## 🔧 开发指南
+
+### 后端开发
+1. 修改 controllers 中的业务逻辑
+2. 在 routes 中定义路由
+3. **重要**: 修改后端代码后必须重启服务
+
+### 前端开发
+1. 在 pages 中创建页面组件
+2. 在 api/index.js 中定义API调用
+3. Vite 支持热更新，无需重启
+
+### 数据库迁移
+在 `server/config/database.js` 的 `migrateDatabase()` 函数中添加迁移逻辑：
+```javascript
+await addColumn('ALTER TABLE table_name ADD COLUMN new_column TYPE DEFAULT value')
+```
+
+## 📝 常见问题
+
+### Q: 修改后端代码后不生效？
+A: 必须重启后端服务（Ctrl+C 然后重新运行 `npm run server`）
+
+### Q: 数据显示为空？
+A: 检查：
+1. labor_tasks 表是否有对应成员记录
+2. monthly_bills 表是否有当月数据
+3. 成员状态是否为"在职"(active)
+
+### Q: 金额设置保存失败？
+A: 查看后端控制台日志，检查是否有错误信息
+
+### Q: 如何清空测试数据？
+A: 管理员登录后，在"账本管理"页面点击"清空所有记录"按钮
+
+## 🚨 重要注意事项
+
+1. **数据一致性**: 设置金额时必须同时更新 `labor_tasks` 和 `monthly_bills` 两张表
+2. **密码安全**: 删除成员需要输入当前用户密码验证
+3. **权限检查**: 分销商只能管理自己的成员
+4. **金额输入**: 允许输入0值，支持小数
+
+## 📄 更新日志
+
+### v1.2.0 (2026-02-03)
+- ✨ 新增本月交付金额计算和显示
+- ✨ 月度账单批量确认功能
+- 🐛 修复金额设置保存后数据消失问题
+- 🐛 修复数据同步核心问题
+- ♻️ 移除金额设置锁定机制
+- 📝 添加详细的调试日志
+
+### v1.1.0
+- ✨ 成员删除密码验证
+- ✨ 金额管理支持0值输入
+- ✨ 账本管理清空功能
+- 🐛 修复SQLite NOT NULL约束错误
+
+### v1.0.0
+- 🎉 初始版本发布
+- ✨ 基础功能实现
+
+## 📖 文档
+
+- [项目交接文档.md](./项目交接文档.md) - 详细的技术实现文档
+- [使用说明.md](./使用说明.md) - 用户操作手册
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+## 📜 许可证
+
+MIT License
+
+## 👥 联系方式
+
+如有问题，请提交 Issue 或联系项目维护者。
+
+---
+
+**开发建议**: 
+- 优先保证数据正确性
+- 分步骤解决问题
+- 修改后端代码后记得重启服务
+- 查看控制台日志进行调试

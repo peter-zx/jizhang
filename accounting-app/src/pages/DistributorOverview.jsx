@@ -51,18 +51,27 @@ function DistributorOverview({ user }) {
         const members = membersResponse.data.members
         const memberCount = members.length
         
-        // 计算总在职月数：每个成员算1个月（简化逻辑，实际应该计算合同月份）
-        const totalMonths = memberCount
+        // 获取当前用户的金额设置
+        const commissionPerPerson = userInfo?.commission_amount || 0
+        const depositPerPerson = userInfo?.deposit_amount || 0
         
-        // 计算总营收和佣金（基于当前设置的佣金金额）
-        const commissionPerPerson = userInfo?.commission_amount || settings.commissionAmount || 0
+        // 计算我的佣金
         const calculatedCommission = commissionPerPerson * memberCount
-        const calculatedRevenue = commissionPerPerson * totalMonths
+        
+        // 计算本月交付金额 = 当月在职人员月度金额 - 保障金 - 佣金金额
+        let totalMonthlyAmount = 0
+        members.forEach(member => {
+          totalMonthlyAmount += (member.current_monthly_amount || 0)
+        })
+        
+        const totalDeposit = depositPerPerson * memberCount
+        const totalCommission = calculatedCommission
+        const deliveryAmount = totalMonthlyAmount - totalDeposit - totalCommission
         
         setStats({
           myMembers: memberCount,
-          totalMonths: totalMonths,
-          totalRevenue: calculatedRevenue,
+          totalMonths: memberCount,
+          totalRevenue: deliveryAmount, // 本月交付金额
           myCommission: calculatedCommission
         })
       }
@@ -112,10 +121,10 @@ function DistributorOverview({ user }) {
           <p style={{ fontSize: '12px', color: '#7f8c8d', marginTop: '5px' }}>在职成员总数</p>
         </div>
         <div className="stat-card" style={{ borderLeftColor: '#27ae60' }}>
-          <h3>总营收</h3>
-          <div className="value">¥{calculatedRevenue.toLocaleString()}</div>
+          <h3>本月交付金额</h3>
+          <div className="value">¥{stats.totalRevenue.toLocaleString()}</div>
           <p style={{ fontSize: '12px', color: '#7f8c8d', marginTop: '5px' }}>
-            {stats.myMembers}人 × {stats.totalMonths / Math.max(stats.myMembers, 1)}月 × ¥{settings.commissionAmount}
+            月度金额 - 保障金 - 佣金
           </p>
         </div>
         <div className="stat-card" style={{ borderLeftColor: '#f39c12' }}>

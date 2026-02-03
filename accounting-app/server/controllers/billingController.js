@@ -99,6 +99,20 @@ const getCurrentMonthStats = async (req, res) => {
     }
 
     const stats = await db.get(query, params);
+    
+    // 获取用户的金额设置
+    const user = await db.get('SELECT commission_amount, deposit_amount FROM users WHERE id = ?', [req.user.id]);
+    
+    // 计算本月交付金额 = 月度金额 - 保障金 - 佣金
+    const totalMonthlyAmount = stats.total_amount || 0;
+    const memberCount = stats.total_bills || 0;
+    const totalDeposit = (user?.deposit_amount || 0) * memberCount;
+    const totalCommission = (user?.commission_amount || 0) * memberCount;
+    const deliveryAmount = totalMonthlyAmount - totalDeposit - totalCommission;
+    
+    // 添加本月交付金额到统计
+    stats.delivery_amount = deliveryAmount;
+    
     res.json({ success: true, data: { stats, currentMonth } });
   } catch (error) {
     console.error('获取统计错误:', error);
