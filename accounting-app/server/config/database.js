@@ -222,52 +222,117 @@ class Database {
       const bcrypt = require('bcryptjs');
       const { v4: uuidv4 } = require('uuid');
 
-      // 检查是否已有管理员
-      this.db.get('SELECT * FROM users WHERE role = ?', ['admin'], (err, row) => {
-        if (err) {
-          reject(err);
-        } else if (!row) {
-          // 创建默认管理员账户
-          const hashedPassword = bcrypt.hashSync('admin', 10);
-          const adminInviteCode = uuidv4().substring(0, 8).toUpperCase();
+      // 先执行数据库迁移，添加缺失的字段
+      this.migrateDatabase().then(() => {
+        // 检查是否已有管理员
+        this.db.get('SELECT * FROM users WHERE role = ?', ['admin'], (err, row) => {
+          if (err) {
+            reject(err);
+          } else if (!row) {
+            // 创建默认管理员账户
+            const hashedPassword = bcrypt.hashSync('admin', 10);
+            const adminInviteCode = uuidv4().substring(0, 8).toUpperCase();
 
-          this.db.run(`
-            INSERT INTO users (username, password, name, role, invite_code, status)
-            VALUES (?, ?, ?, ?, ?, ?)
-          `, ['admin', hashedPassword, '系统管理员', 'admin', adminInviteCode, 'active'], (err) => {
-            if (err) {
-              reject(err);
-            } else {
-              console.log('默认管理员账户创建成功');
-              console.log('管理员账号: admin');
-              console.log('管理员密码: admin');
-              console.log('管理员邀请码:', adminInviteCode);
-              
-              // 清空现有记录并插入默认示例记录
-              this.db.run('DELETE FROM accounting_records', (err) => {
-                if (err) {
-                  console.log('清空记录失败:', err);
-                }
-                
-                // 插入一条默认示例记录
-                this.db.run(`
-                  INSERT INTO accounting_records 
-                  (member_id, distributor_id, received_amount, deposit, insurance, commission, commission_type, net_revenue, record_date, city, notes)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `, [0, 1, 0, 0, 0, 0, 'rate', 0, new Date().toISOString().split('T')[0], '示例城市', '这是默认示例记录'], (err) => {
-                  if (err) {
-                    console.log('创建默认记录失败:', err);
-                  } else {
-                    console.log('默认示例记录已创建');
-                  }
-                  resolve();
-                });
-              });
-            }
-          });
-        } else {
-          resolve();
+            this.db.run(`
+              INSERT INTO users (username, password, name, role, invite_code, status)
+              VALUES (?, ?, ?, ?, ?, ?)
+            `, ['admin', hashedPassword, '系统管理员', 'admin', adminInviteCode, 'active'], (err) => {
+              if (err) {
+                reject(err);
+              } else {
+                console.log('默认管理员账户创建成功');
+                console.log('管理员账号: admin');
+                console.log('管理员密码: admin');
+                console.log('管理员邀请码:', adminInviteCode);
+                resolve();
+              }
+            });
+          } else {
+            resolve();
+          }
+        });
+      }).catch(reject);
+    });
+  }
+
+  // 数据库迁移：添加缺失的字段
+  migrateDatabase() {
+    return new Promise((resolve, reject) => {
+      console.log('开始数据库迁移...');
+      
+      // 检查并添加 users 表的新字段
+      this.db.get("PRAGMA table_info(users)", (err, info) => {
+        if (err) {
+          console.log('检查表结构失败:', err);
         }
+        
+        // 添加 commission_amount 字段
+        this.db.run('ALTER TABLE users ADD COLUMN commission_amount REAL DEFAULT 0', (err) => {
+          if (err && !err.message.includes('duplicate column name')) {
+            console.log('添加commission_amount字段失败:', err.message);
+          } else {
+            console.log('✓ users.commission_amount 字段已就绪');
+          }
+        });
+
+        // 添加 deposit_amount 字段
+        this.db.run('ALTER TABLE users ADD COLUMN deposit_amount REAL DEFAULT 0', (err) => {
+          if (err && !err.message.includes('duplicate column name')) {
+            console.log('添加deposit_amount字段失败:', err.message);
+          } else {
+            console.log('✓ users.deposit_amount 字段已就绪');
+          }
+        });
+
+        // 添加 insurance_amount 字段
+        this.db.run('ALTER TABLE users ADD COLUMN insurance_amount REAL DEFAULT 0', (err) => {
+          if (err && !err.message.includes('duplicate column name')) {
+            console.log('添加insurance_amount字段失败:', err.message);
+          } else {
+            console.log('✓ users.insurance_amount 字段已就绪');
+          }
+        });
+
+        // 添加 settings_locked 字段
+        this.db.run('ALTER TABLE users ADD COLUMN settings_locked INTEGER DEFAULT 0', (err) => {
+          if (err && !err.message.includes('duplicate column name')) {
+            console.log('添加settings_locked字段失败:', err.message);
+          } else {
+            console.log('✓ users.settings_locked 字段已就绪');
+          }
+        });
+
+        // 检查并添加 members 表的新字段
+        // 添加 documents 字段
+        this.db.run('ALTER TABLE members ADD COLUMN documents TEXT DEFAULT "{}"', (err) => {
+          if (err && !err.message.includes('duplicate column name')) {
+            console.log('添加documents字段失败:', err.message);
+          } else {
+            console.log('✓ members.documents 字段已就绪');
+          }
+        });
+
+        // 添加 additional_info 字段
+        this.db.run('ALTER TABLE members ADD COLUMN additional_info TEXT DEFAULT "{}"', (err) => {
+          if (err && !err.message.includes('duplicate column name')) {
+            console.log('添加additional_info字段失败:', err.message);
+          } else {
+            console.log('✓ members.additional_info 字段已就绪');
+          }
+        });
+
+        // 添加 contract_files 字段
+        this.db.run('ALTER TABLE members ADD COLUMN contract_files TEXT DEFAULT "{}"', (err) => {
+          if (err && !err.message.includes('duplicate column name')) {
+            console.log('添加contract_files字段失败:', err.message);
+          } else {
+            console.log('✓ members.contract_files 字段已就绪');
+          }
+          
+          // 所有迁移完成
+          console.log('数据库迁移完成！');
+          resolve();
+        });
       });
     });
   }
